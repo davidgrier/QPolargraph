@@ -1,4 +1,4 @@
-from QPolargraph.QMotors import QMotors
+from QPolargraph.device.QMotors import QMotors
 from PyQt5.QtCore import pyqtProperty
 import numpy as np
 import logging

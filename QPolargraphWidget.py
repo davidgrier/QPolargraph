@@ -1,5 +1,5 @@
 from QInstrument.lib import QInstrumentWidget
-from QPolargraph import QPolargraph
+from QPolargraph.QPolargraph import QPolargraph
 from PyQt5.QtCore import pyqtSlot
 
 
