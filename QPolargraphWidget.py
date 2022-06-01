@@ -1,6 +1,5 @@
 from QInstrument.lib import QInstrumentWidget
 from QPolargraph.Polargraph import Polargraph
-from PyQt5.QtCore import pyqtSlot
 
 
 class QPolargraphWidget(QInstrumentWidget):
@@ -21,7 +20,6 @@ def main():
     app = QApplication(sys.argv)
     widget = QPolargraphWidget()
     widget.show()
-    print(widget.properties)
     sys.exit(app.exec_())
 
 

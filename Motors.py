@@ -17,11 +17,13 @@ class Motors(QSerialInstrument):
 
     Attributes
     ----------
-    indexes : tuple of integers
+    indexes : (int, int)
         (n1, n2) Step indexes of two stepper motors.
         Setting this property causes the motors to move to (n1, n2).
-    motor_speed : float
-        maximum stepper motor speed in steps/second.
+    motor_speed : (float, float)
+        (v1, v2) Maximum stepper motor speed in steps/second.
+    acceleration : (float, float)
+        (a1, a2) Acceleration in steps/second^2.
 
     Methods
     -------
@@ -96,30 +98,39 @@ class Motors(QSerialInstrument):
         try:
             res = self.handshake('P')
             header, n1, n2 = res.split(':')
-            n1 = int(n1)
-            n2 = int(n2)
         except Exception as ex:
             logger.warning(f'Did not read position: {ex}')
             n1 = 0
             n2 = 0
-        return n1, n2
+        return int(n1), int(n2)
 
     @indexes.setter
     def indexes(self, n1, n2):
         self.send(f'P:{n1}:{n2}')
 
-    @pyqtProperty(float)
+    @pyqtProperty(float, float)
     def motor_speed(self):
         '''Maximum motor speed in steps/sec'''
         try:
             res = self.handshake('V')
-            header, speed = res.split(':')
+            header, v1, v2 = res.split(':')
         except Exception as ex:
             logger.warning(f'Could not read maximum speed: {ex}')
-            speed = 0
-        return float(speed)
+            v1, v2, = 0., 0.
+        return float(v1), float(v2)
 
     @motor_speed.setter
-    def motor_speed(self, speed):
-        res = self.handshake(f'V:{speed}')
+    def motor_speed(self, v1, v2):
+        res = self.handshake(f'V:{v1}:{v2}')
         logger.debug(f'speed: {res}')
+
+    @pyqtProperty(float, float)
+    def acceleration(self):
+        '''Acceleration in steps/sec^2'''
+        return self._acceleration
+
+    @acceleration.setter
+    def acceleration(self, a1, a2):
+        self._acceleration = (a1, a2)
+        res = self.handshake(f'A:{a1}:{a2}')
+        logger.debug(f'acceleration: {res}')

@@ -26,7 +26,7 @@ class Polargraph(Motors):
     ell : float
         Separation between motors [m]
     y0 : float
-        Vertical displacement of home position [m]    
+        Vertical displacement of home position [m]
     pitch : float
         Separation between teeth on timing belt [mm]
         Default: 2.
