@@ -159,7 +159,7 @@ void debug_command() {
 }
 
 void setup() {
-    Serial.begin(9600, SERIAL_8N1); // Serial Port at 9600 baud
+    Serial.begin(115200, SERIAL_8N1); // Serial Port at 9600 baud
     while (!Serial) {
       ;                     // Wait for serial port to connect
     }

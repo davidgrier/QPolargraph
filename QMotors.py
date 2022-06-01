@@ -36,14 +36,19 @@ class QMotors(QSerialInstrument):
         Returns True if motors are running.
     '''
 
-    def __init__(self):
-        super(Motors, self).__init__(eol='\n',
-                                     manufacturer='Arduino',
-                                     timeout=1000)
+    settings = dict(baudRate=QSerialInstrument.Baud115200,
+                    dataBits=QSerialInstrument.Data8,
+                    stopBits=QSerialInstrument.OneStop,
+                    parity=QSerialInstrument.NoParity,
+                    flowControl=QSerialInstrument.NoFlowControl,
+                    eol='\n')
+
+    def __init__(self, portName=None, **kwargs):
+        super().__init__(portName, **self.settings, **kwargs)
 
     def identify(self):
         version = 'acam3'
-        logger.info(' Waiting for Arduino serial port')
+        logger.info(f' Trying {self.portName()}...')
         sleep(2)
         res = self.handshake('Q')
         logger.debug(f' Received: {res}')

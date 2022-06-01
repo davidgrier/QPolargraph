@@ -23,11 +23,11 @@ class QPolargraph(QMotors):
 
     Attributes
     ----------
-    unit : float
+    pitch : float
         Separation between teeth on timing belt [mm]
         Default: 2.
     circumference : float
-        Number of gear teeth per revolution.
+        Number of teeth per revolution.
         Default: 25.
     steps : float
         Number of motor steps per revolution.
@@ -62,19 +62,20 @@ class QPolargraph(QMotors):
     '''
 
     def __init__(self,
-                 unit=2.,            # size of one timing belt tooth [mm]
+                 pitch=2.,           # size of one timing belt tooth [mm]
                  circumference=25.,  # belt teeth per revolution
                  steps=200.,         # motor steps per revolution
                  ell=1.,             # separation between motors [m]
                  y0=0.1,             # home position [m]
                  width=0.6,          # width of scan area [m]
                  height=0.6,         # height of scan area [m]
-                 dy=0.005):          # interscanline displacement [m]
+                 dy=0.005,           # interscanline displacement [m]
+                 **kwargs):
 
-        super(QPolargraph, self).__init__()
+        super().__init__(**kwargs)
 
         # Belt drive
-        self.unit = float(unit)
+        self.pitch = float(pitch)
         self.circumference = float(circumference)
         self.steps = float(steps)
 
@@ -93,7 +94,7 @@ class QPolargraph(QMotors):
     @pyqtProperty(float)
     def ds(self):
         '''Distance traveled per step [m]'''
-        return 1e-3 * self.unit * self.circumference / self.steps
+        return 1e-3 * self.pitch * self.circumference / self.steps
 
     @pyqtProperty(float)
     def s0(self):
@@ -126,12 +127,12 @@ class QPolargraph(QMotors):
     @pyqtProperty(float)
     def speed(self):
         '''Translation speed in mm/s'''
-        return self.motor_speed * self.circumference * self.unit / self.steps
+        return self.motor_speed * self.circumference * self.pitch / self.steps
 
     @speed.setter
     def speed(self, value):
         self.motor_speed = value * (self.steps /
-                                    (self.circumference * self.unit))
+                                    (self.circumference * self.pitch))
 
 
 if __name__ == '__main__':
@@ -139,12 +140,12 @@ if __name__ == '__main__':
     import sys
 
     app = QApplication(sys.argv)
-    motors = QPolargraph()
-    print(f'Current position: {motors.indexes}')
-    motors.goto(0.01, -0.01)
+    polargraph = QPolargraph()
+    print(f'Current position: {polargraph.indexes}')
+    polargraph.goto(0.01, -0.01)
     w = QWidget()
     w.show()
-    while (motors.running):
+    while (polargraph.running):
         print('.')
-    motors.close()
+    polargraph.close()
     sys.exit(app.exec_())
