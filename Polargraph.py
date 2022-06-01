@@ -1,14 +1,14 @@
-from QPolargraph.device.QMotors import QMotors
+from QPolargraph.Motors import Motors
 from PyQt5.QtCore import pyqtProperty
 import numpy as np
 import logging
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 
-class QPolargraph(QMotors):
+class Polargraph(Motors):
 
     '''
     Abstraction of a polargraph
@@ -23,6 +23,10 @@ class QPolargraph(QMotors):
 
     Attributes
     ----------
+    ell : float
+        Separation between motors [m]
+    y0 : float
+        Vertical displacement of home position [m]    
     pitch : float
         Separation between teeth on timing belt [mm]
         Default: 2.
@@ -32,20 +36,9 @@ class QPolargraph(QMotors):
     steps : float
         Number of motor steps per revolution.
         Default: 200.
-    ell : float
-        Separation between motors [m]
-    y0 : float
-        Vertical displacement of home position [m]
-    y1 : float
-        Vertical position of scan start [m]
-    width : float
-        Width of scan area [m]
-    height : float
-        Height of scan area [m]
-    dy : float
-        Vertical displacement between scan lines [m]
+
     ds : float
-        Distance traveled per motor step [m]
+        Distance traveled per motor step [mm]
     s0 : float
         Length of belt from motor to payload at home position [m]
     position : (x, y)
@@ -67,9 +60,6 @@ class QPolargraph(QMotors):
                  steps=200.,         # motor steps per revolution
                  ell=1.,             # separation between motors [m]
                  y0=0.1,             # home position [m]
-                 width=0.6,          # width of scan area [m]
-                 height=0.6,         # height of scan area [m]
-                 dy=0.005,           # interscanline displacement [m]
                  **kwargs):
 
         super().__init__(**kwargs)
@@ -83,18 +73,13 @@ class QPolargraph(QMotors):
         self.ell = float(ell)
         self.y0 = float(y0)
 
-        # Scan configuration
-        self.x1 = 0.
-        self.y1 = 0.
-        self.width = float(width)
-        self.height = float(height)
-        self.dy = float(dy)
+        # Busy status for QInstrumentWidget
         self.busy = self.running
 
     @pyqtProperty(float)
     def ds(self):
-        '''Distance traveled per step [m]'''
-        return 1e-3 * self.pitch * self.circumference / self.steps
+        '''Distance traveled per step [mm]'''
+        return self.pitch * self.circumference / self.steps
 
     @pyqtProperty(float)
     def s0(self):
@@ -107,7 +92,7 @@ class QPolargraph(QMotors):
         s2 = np.sqrt((self.ell / 2. + x)**2 + y**2)
         n1 = np.rint((s1 - self.s0) / self.ds).astype(int)
         n2 = np.rint((self.s0 - s2) / self.ds).astype(int)
-        super(QPolargraph, self).goto(n1, n2)
+        super(Polargraph, self).goto(n1, n2)
 
     @pyqtProperty(float, float)
     def position(self):
@@ -118,34 +103,37 @@ class QPolargraph(QMotors):
         x = (s2**2 - s1**2) / (2. * self.ell)
         ysq = (s1**2 + s2**2) / 2. - self.ell**2 / 4. - x**2
         if ysq < 0:
-            logger.error(f'unphysical result: {n1} {n2} {self.s0} {s1} {s2} {ysq}')
-            y = self.y0
-        else:
-            y = np.sqrt(ysq)
+            logger.error('unphysical result: ' +
+                         f'{n1} {n2} {self.s0} {s1} {s2} {ysq}')
+        y = np.sqrt(ysq) if ysq >= 0 else self.y0
         return x, y
 
     @pyqtProperty(float)
     def speed(self):
         '''Translation speed in mm/s'''
-        return self.motor_speed * self.circumference * self.pitch / self.steps
+        return self.motor_speed * self.ds
 
     @speed.setter
-    def speed(self, value):
-        self.motor_speed = value * (self.steps /
-                                    (self.circumference * self.pitch))
+    def speed(self, speed):
+        self.motor_speed = speed / self.ds
 
 
-if __name__ == '__main__':
-    from PyQt5.QtWidgets import QApplication, QWidget
+def demo():
+    from PyQt5.QtWidgets import QApplication
     import sys
 
     app = QApplication(sys.argv)
-    polargraph = QPolargraph()
+    polargraph = Polargraph().find()
     print(f'Current position: {polargraph.indexes}')
     polargraph.goto(0.01, -0.01)
-    w = QWidget()
-    w.show()
+    if polargraph.running:
+        print('Running...')
     while (polargraph.running):
-        print('.')
+        pass
+    print(f'Current position: {polargraph.indexes}')
     polargraph.close()
     sys.exit(app.exec_())
+
+
+if __name__ == '__main__':
+    demo()

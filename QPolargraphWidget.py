@@ -1,5 +1,5 @@
 from QInstrument.lib import QInstrumentWidget
-from QPolargraph.QPolargraph import QPolargraph
+from QPolargraph.Polargraph import Polargraph
 from PyQt5.QtCore import pyqtSlot
 
 
@@ -10,7 +10,7 @@ class QPolargraphWidget(QInstrumentWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args,
                          uiFile='PolargraphWidget.ui',
-                         deviceClass=QPolargraph,
+                         deviceClass=Polargraph,
                          **kwargs)
         self.connectSignals()
 

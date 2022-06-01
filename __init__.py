@@ -1,6 +1,6 @@
-from .QMotors import QMotors
-from .QPolargraph import QPolargraph
+from .Motors import Motors
+from .Polargraph import Polargraph
 from .QPolargraphWidget import QPolargraphWidget
 
 
-__all__ = ['QMotors', 'QPolargraph', 'QPolargraphWidget']
+__all__ = ['Motors', 'Polargraph', 'QPolargraphWidget']
