@@ -116,10 +116,10 @@ class Polargraph(Motors):
     def position(self):
         '''Current coordinates [m]'''
         n1, n2 = self.indexes
-        s1 = self.s0 + n1 * self.ds
-        s2 = self.s0 - n2 * self.ds
-        x = (s2**2 - s1**2) / (2. * self.ell)
-        ysq = (s1**2 + s2**2) / 2. - self.ell**2 / 4. - x**2
+        s1 = self.s0 + n1*self.ds
+        s2 = self.s0 - n2*self.ds
+        x = (s2**2 - s1**2)/(2. * self.ell)
+        ysq = (s1**2 + s2**2)/2. - self.ell**2/4. - x**2
         if ysq < 0:
             logger.error('unphysical result: ' +
                          f'{n1} {n2} {self.s0} {s1} {s2} {ysq}')
@@ -128,10 +128,10 @@ class Polargraph(Motors):
 
     def goto(self, x, y):
         '''Move payload to position (x,y) [m]'''
-        s1 = np.sqrt((self.ell / 2. - x)**2 + y**2)
-        s2 = np.sqrt((self.ell / 2. + x)**2 + y**2)
-        n1 = np.rint((s1 - self.s0) / self.ds).astype(int)
-        n2 = np.rint((self.s0 - s2) / self.ds).astype(int)
+        s1 = np.sqrt((self.ell/2. - x)**2 + y**2)
+        s2 = np.sqrt((self.ell/2. + x)**2 + y**2)
+        n1 = np.rint((s1 - self.s0)/self.ds).astype(int)
+        n2 = np.rint((self.s0 - s2)/self.ds).astype(int)
         super(Polargraph, self).goto(n1, n2)
 
 
