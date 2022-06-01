@@ -12,15 +12,6 @@ class QPolargraphWidget(QInstrumentWidget):
                          uiFile='PolargraphWidget.ui',
                          deviceClass=Polargraph,
                          **kwargs)
-        self.connectSignals()
-
-    def connectSignals(self):
-        self.ui.ell.valueChanged.connect(self.limitRange)
-
-    @pyqtSlot(float)
-    def limitRange(self, value):
-        self.ui.width.setMaximum(0.9*value)
-        self.ui.height.setMaximum(0.9*value)
 
 
 def main():
@@ -30,6 +21,7 @@ def main():
     app = QApplication(sys.argv)
     widget = QPolargraphWidget()
     widget.show()
+    print(widget.properties)
     sys.exit(app.exec_())
 
 

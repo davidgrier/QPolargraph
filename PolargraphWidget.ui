@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>333</width>
-    <height>128</height>
+    <width>370</width>
+    <height>144</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -44,7 +44,7 @@
       </font>
      </property>
      <property name="title">
-      <string>Setup</string>
+      <string>Configuration</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
       <property name="leftMargin">
@@ -77,6 +77,9 @@
       </item>
       <item row="0" column="1">
        <widget class="QDoubleSpinBox" name="ell">
+        <property name="toolTip">
+         <string>Separation betwen stepping motors</string>
+        </property>
         <property name="suffix">
          <string> m</string>
         </property>
@@ -106,6 +109,9 @@
       </item>
       <item row="0" column="3">
        <widget class="QDoubleSpinBox" name="y0">
+        <property name="toolTip">
+         <string>Home position</string>
+        </property>
         <property name="suffix">
          <string> m</string>
         </property>
@@ -171,6 +177,9 @@
       </item>
       <item row="0" column="1" colspan="2">
        <widget class="QDoubleSpinBox" name="pitch">
+        <property name="toolTip">
+         <string>Separation between teeth on belt</string>
+        </property>
         <property name="statusTip">
          <string>Polargraph: Tooth size on timing belt</string>
         </property>
@@ -201,25 +210,6 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="4">
-       <widget class="QDoubleSpinBox" name="circumference">
-        <property name="statusTip">
-         <string>Polargraph: Units per motor revolution</string>
-        </property>
-        <property name="suffix">
-         <string> units</string>
-        </property>
-        <property name="decimals">
-         <number>0</number>
-        </property>
-        <property name="minimum">
-         <double>1.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>25.000000000000000</double>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="0" colspan="2">
        <widget class="QLabel" name="labelSteps">
         <property name="text">
@@ -230,40 +220,21 @@
         </property>
        </widget>
       </item>
-      <item row="1" column="2">
-       <widget class="QDoubleSpinBox" name="steps">
-        <property name="statusTip">
-         <string>Polargraph: Motor steps per revolution</string>
-        </property>
-        <property name="decimals">
-         <number>0</number>
-        </property>
-        <property name="minimum">
-         <double>100.000000000000000</double>
-        </property>
-        <property name="maximum">
-         <double>500.000000000000000</double>
-        </property>
-        <property name="singleStep">
-         <double>50.000000000000000</double>
-        </property>
-        <property name="value">
-         <double>200.000000000000000</double>
-        </property>
-       </widget>
-      </item>
       <item row="1" column="3">
        <widget class="QLabel" name="labelStepSpeed">
         <property name="text">
          <string>speed</string>
         </property>
         <property name="buddy">
-         <cstring>stepSpeed</cstring>
+         <cstring>speed</cstring>
         </property>
        </widget>
       </item>
       <item row="1" column="4">
-       <widget class="QDoubleSpinBox" name="stepSpeed">
+       <widget class="QDoubleSpinBox" name="speed">
+        <property name="toolTip">
+         <string>Maximum motor speed</string>
+        </property>
         <property name="statusTip">
          <string>Polargraph: Motor steps per second</string>
         </property>
@@ -287,6 +258,41 @@
         </property>
        </widget>
       </item>
+      <item row="0" column="4">
+       <widget class="QSpinBox" name="circumference">
+        <property name="toolTip">
+         <string>Number of teeth per full rotation</string>
+        </property>
+        <property name="statusTip">
+         <string>Polargraph: Units per motor revolution</string>
+        </property>
+        <property name="suffix">
+         <string> units</string>
+        </property>
+        <property name="value">
+         <number>25</number>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QSpinBox" name="steps">
+        <property name="toolTip">
+         <string>Number of steps in a full rotation</string>
+        </property>
+        <property name="statusTip">
+         <string>Polargraph: Motor steps per revolution</string>
+        </property>
+        <property name="minimum">
+         <number>50</number>
+        </property>
+        <property name="maximum">
+         <number>500</number>
+        </property>
+        <property name="value">
+         <number>200</number>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>
@@ -298,7 +304,7 @@
   <tabstop>pitch</tabstop>
   <tabstop>circumference</tabstop>
   <tabstop>steps</tabstop>
-  <tabstop>stepSpeed</tabstop>
+  <tabstop>speed</tabstop>
  </tabstops>
  <resources/>
  <connections/>

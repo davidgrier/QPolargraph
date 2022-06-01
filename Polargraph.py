@@ -54,24 +54,41 @@ class Polargraph(Motors):
        from home position.
     '''
 
+    def Property(name, dtype=float):
+        pname = f'_{name}'
+
+        def getter(self):
+            return dtype(getattr(self, pname))
+
+        def setter(self, value):
+            logger.debug(f'Setting {name}: {value}')
+            setattr(self, pname, dtype(value))
+        return pyqtProperty(dtype, getter, setter)
+
+    pitch = Property('pitch')
+    circumference = Property('circumference', int)
+    steps = Property('steps', int)
+    ell = Property('ell')
+    y0 = Property('y0')
+
     def __init__(self,
-                 pitch=2.,           # size of one timing belt tooth [mm]
-                 circumference=25.,  # belt teeth per revolution
-                 steps=200.,         # motor steps per revolution
-                 ell=1.,             # separation between motors [m]
-                 y0=0.1,             # home position [m]
+                 pitch=2.,          # size of one timing belt tooth [mm]
+                 circumference=25,  # belt teeth per revolution
+                 steps=200,         # motor steps per revolution
+                 ell=1.,            # separation between motors [m]
+                 y0=0.1,            # home position [m]
                  **kwargs):
 
         super().__init__(**kwargs)
 
         # Belt drive
-        self.pitch = float(pitch)
-        self.circumference = float(circumference)
-        self.steps = float(steps)
+        self.pitch = pitch
+        self.circumference = circumference
+        self.steps = steps
 
         # Motor configuration
-        self.ell = float(ell)
-        self.y0 = float(y0)
+        self.ell = ell
+        self.y0 = y0
 
         # Busy status for QInstrumentWidget
         self.busy = self.running
@@ -82,21 +99,22 @@ class Polargraph(Motors):
         return self.pitch * self.circumference / self.steps
 
     @pyqtProperty(float)
+    def speed(self):
+        '''Translation speed [mm/s]'''
+        return self.motor_speed * self.ds
+
+    @speed.setter
+    def speed(self, speed):
+        self.motor_speed = speed / self.ds
+
+    @pyqtProperty(float)
     def s0(self):
         '''Distance from motor to payload at home position [m]'''
-        return np.sqrt((self.ell / 2.)**2 + (self.y0)**2)
-
-    def goto(self, x, y):
-        '''Move payload to position (x,y)'''
-        s1 = np.sqrt((self.ell / 2. - x)**2 + y**2)
-        s2 = np.sqrt((self.ell / 2. + x)**2 + y**2)
-        n1 = np.rint((s1 - self.s0) / self.ds).astype(int)
-        n2 = np.rint((self.s0 - s2) / self.ds).astype(int)
-        super(Polargraph, self).goto(n1, n2)
+        return np.sqrt((self.ell/2.)**2 + (self.y0)**2)
 
     @pyqtProperty(float, float)
     def position(self):
-        '''Current coordinates in meters'''
+        '''Current coordinates [m]'''
         n1, n2 = self.indexes
         s1 = self.s0 + n1 * self.ds
         s2 = self.s0 - n2 * self.ds
@@ -108,14 +126,13 @@ class Polargraph(Motors):
         y = np.sqrt(ysq) if ysq >= 0 else self.y0
         return x, y
 
-    @pyqtProperty(float)
-    def speed(self):
-        '''Translation speed in mm/s'''
-        return self.motor_speed * self.ds
-
-    @speed.setter
-    def speed(self, speed):
-        self.motor_speed = speed / self.ds
+    def goto(self, x, y):
+        '''Move payload to position (x,y) [m]'''
+        s1 = np.sqrt((self.ell / 2. - x)**2 + y**2)
+        s2 = np.sqrt((self.ell / 2. + x)**2 + y**2)
+        n1 = np.rint((s1 - self.s0) / self.ds).astype(int)
+        n2 = np.rint((self.s0 - s2) / self.ds).astype(int)
+        super(Polargraph, self).goto(n1, n2)
 
 
 def demo():
