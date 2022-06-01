@@ -59,11 +59,12 @@ void set_target() {
   sscanf(cmd, "G:%ld:%ld", &n1, &n2);
   stepper1.moveTo(n1);
   stepper2.moveTo(n2);
-  Serial.print('G');
+  Serial.println('G');
 }
 
 void getset_speed() {
   char *token;
+  const char delim = ':';
   float v1, v2;
   
   if (len == 1) {
@@ -73,12 +74,14 @@ void getset_speed() {
     Serial.print(':');
     Serial.print(v1);
     Serial.print(':');
-    Serial.print(v2);
+    Serial.println(v2);
   }
   else {
-    token = strtok(cmd, ':');
-    v1 = atof(strtok(NULL, ':'));
-    v2 = atof(strtok(NULL, ':'));
+    token = strtok(cmd, &delim);
+    token = strtok(NULL, &delim);
+    v1 = atof(token);
+    token = strtok(NULL, &delim);
+    v2 = atof(token);
     stepper1.setMaxSpeed(v1);
     stepper2.setMaxSpeed(v2);
     Serial.println('V');
@@ -87,11 +90,14 @@ void getset_speed() {
 
 void set_acceleration() {
   char *token;
+  const char delim = ':';
   float a1, a2;
   
-  token = strtok(cmd, ':');
-  a1 = atof(strtok(NULL, ':'));
-  a2 = atof(strtok(NULL, ':'));
+  token = strtok(cmd, &delim);
+  token = strtok(NULL, &delim);
+  a1 = atof(token);
+  token = strtok(NULL, &delim);
+  a2 = atof(token);
   stepper1.setAcceleration(a1);
   stepper2.setAcceleration(a2);
   Serial.println('A');
