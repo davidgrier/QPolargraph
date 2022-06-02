@@ -45,7 +45,9 @@ class Polargraph(Motors):
        Report current coordinates of payload measured in
        meters from home position.
     speed : float
-       Translation speed [mm/s]
+       Maximum translation speed [mm/s]
+    acceleration : float
+       Maximum acceleration [mm/s^2]
 
     Methods
     -------
@@ -70,6 +72,8 @@ class Polargraph(Motors):
     steps = Property('steps', int)
     ell = Property('ell')
     y0 = Property('y0')
+    speed = Property('speed')
+    acceleration = Property('acceleration')
 
     def __init__(self,
                  pitch=2.,          # size of one timing belt tooth [mm]
@@ -77,6 +81,7 @@ class Polargraph(Motors):
                  steps=200,         # motor steps per revolution
                  ell=1.,            # separation between motors [m]
                  y0=0.1,            # home position [m]
+                 speed=100.,        # desired speed [mm/s]
                  **kwargs):
 
         super().__init__(**kwargs)
@@ -89,6 +94,7 @@ class Polargraph(Motors):
         # Motor configuration
         self.ell = ell
         self.y0 = y0
+        self.speed = speed
 
         # Busy status for QInstrumentWidget
         self.busy = self.running
@@ -99,57 +105,68 @@ class Polargraph(Motors):
         return self.pitch * self.circumference / self.steps
 
     @pyqtProperty(float)
-    def speed(self):
-        '''Translation speed [mm/s]'''
-        return self.motor_speed * self.ds
-
-    @speed.setter
-    def speed(self, speed):
-        self.motor_speed = speed / self.ds
-
-    @pyqtProperty(float)
     def s0(self):
         '''Distance from motor to payload at home position [m]'''
         return np.sqrt((self.ell/2.)**2 + (self.y0)**2)
 
-    @pyqtProperty(float, float)
-    def position(self):
-        '''Current coordinates [m]'''
-        n1, n2 = self.indexes
-        s1 = self.s0 + n1*self.ds
-        s2 = self.s0 - n2*self.ds
-        x = (s2**2 - s1**2)/(2. * self.ell)
-        ysq = (s1**2 + s2**2)/2. - self.ell**2/4. - x**2
+    def i2r(self, indexes):
+        '''Convert motor indexes to coordinates [m]'''
+        m, n = indexes
+        sm = self.s0 + m*self.ds
+        sn = self.s0 - n*self.ds
+        x = (sn**2 - sm**2)/(2. * self.ell)
+        ysq = (sn**2 + sm**2)/2. - self.ell**2/4. - x**2
         if ysq < 0:
             logger.error('unphysical result: ' +
-                         f'{n1} {n2} {self.s0} {s1} {s2} {ysq}')
+                         f'{m} {n} {self.s0} {sm} {sn} {ysq}')
         y = np.sqrt(ysq) if ysq >= 0 else self.y0
         return x, y
 
-    def goto(self, x, y):
-        '''Move payload to position (x,y) [m]'''
-        s1 = np.sqrt((self.ell/2. - x)**2 + y**2)
-        s2 = np.sqrt((self.ell/2. + x)**2 + y**2)
-        n1 = np.rint((s1 - self.s0)/self.ds).astype(int)
-        n2 = np.rint((self.s0 - s2)/self.ds).astype(int)
-        super(Polargraph, self).goto(n1, n2)
+    @pyqtProperty(float, float)
+    def position(self):
+        '''Current coordinates [m]'''
+        return self.i2r(self.indexes)
+
+    def moveTo(self, x, y):
+        '''Move payload to position (x,y) [mm]'''
+        # current motor indexes
+        m0, n0 = self.indexes
+        # target motor indexes
+        sm = np.sqrt((self.ell/2. + x)**2 + y**2)
+        sn = np.sqrt((self.ell/2. - x)**2 + y**2)
+        m1 = np.rint((sm - self.s0)/self.ds).astype(int)
+        n1 = np.rint((self.s0 - sn)/self.ds).astype(int)
+        logger.debug(f'Path: ({m0}, {n0}) --> ({m1}, {n1})')
+        # adjust speed so that motors complete motion simulutaneously
+        v = self.speed/self.ds  # speed in steps/s
+        if (m0 == m1) or (n0 == n1):
+            vm, vn = v, v
+        else:
+            f = (float(n1-n0)/float(m1-m0))**2
+            vm = v / np.sqrt(1. + f)
+            vn = np.sqrt(v**2 - vm**2)
+        logger.debug(f'Motor speeds: ({vm}, {vn})')
+        self.motor_speed = vm, vn
+        # go to target indexes
+        self.goto(m1, n1)
 
 
 def demo():
-    from PyQt5.QtWidgets import QApplication
+    from PyQt5.QtCore import QCoreApplication
     import sys
 
-    app = QApplication(sys.argv)
+    print('Polargraph test')
+    app = QCoreApplication(sys.argv)
     polargraph = Polargraph().find()
     print(f'Current position: {polargraph.indexes}')
-    polargraph.goto(0.01, -0.01)
-    if polargraph.running:
+    polargraph.moveTo(0.0, 100)
+    if polargraph.running():
         print('Running...')
-    while (polargraph.running):
+    while (polargraph.running()):
         pass
     print(f'Current position: {polargraph.indexes}')
     polargraph.close()
-    sys.exit(app.exec_())
+    app.quit()
 
 
 if __name__ == '__main__':

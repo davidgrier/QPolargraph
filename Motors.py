@@ -5,7 +5,7 @@ import logging
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.WARNING)
 
 
 class Motors(QSerialInstrument):
@@ -72,7 +72,7 @@ class Motors(QSerialInstrument):
             Index of motor 2
         '''
         logger.debug(f' goto {n1} {n2}')
-        self.send(f'G:{n1}:{n2}')
+        self.handshake(f'G:{n1}:{n2}')
 
     def home(self):
         '''Move to home position'''
@@ -84,13 +84,10 @@ class Motors(QSerialInstrument):
 
     def running(self):
         '''Returns True if motors are running'''
-        try:
-            res = self.handshake('R')
-            header, running = res.split(':')
-        except Exception as ex:
-            logger.warning(f'Could not read running status: {ex}')
-            running = 0
-        return bool(int(running))
+        res = self.handshake('R')
+        logger.debug(f'running: {res}')
+        header, running = res.split(':')
+        return running == '1'
 
     @pyqtProperty(int, int)
     def indexes(self):
@@ -105,12 +102,13 @@ class Motors(QSerialInstrument):
         return int(n1), int(n2)
 
     @indexes.setter
-    def indexes(self, n1, n2):
+    def indexes(self, n):
+        n1, n2 = n
         self.send(f'P:{n1}:{n2}')
 
     @pyqtProperty(float, float)
     def motor_speed(self):
-        '''Maximum motor speed in steps/sec'''
+        '''Maximum motor speed [steps/s]'''
         try:
             res = self.handshake('V')
             header, v1, v2 = res.split(':')
@@ -120,17 +118,19 @@ class Motors(QSerialInstrument):
         return float(v1), float(v2)
 
     @motor_speed.setter
-    def motor_speed(self, v1, v2):
+    def motor_speed(self, v):
+        v1, v2 = v
         res = self.handshake(f'V:{v1}:{v2}')
-        logger.debug(f'speed: {res}')
+        logger.debug(f'speed: {res} {v1} {v2}')
 
     @pyqtProperty(float, float)
     def acceleration(self):
-        '''Acceleration in steps/sec^2'''
+        '''Acceleration [steps/s^2]'''
         return self._acceleration
 
     @acceleration.setter
-    def acceleration(self, a1, a2):
+    def acceleration(self, a):
+        a1, a2 = a
         self._acceleration = (a1, a2)
         res = self.handshake(f'A:{a1}:{a2}')
-        logger.debug(f'acceleration: {res}')
+        logger.debug(f'acceleration: {res} {a1} {a2}')
