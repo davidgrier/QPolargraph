@@ -151,7 +151,7 @@ class Polargraph(Motors):
         self.goto(m1, n1)
 
 
-def demo():
+def main():
     from PyQt5.QtCore import QCoreApplication
     import sys
 
@@ -170,4 +170,4 @@ def demo():
 
 
 if __name__ == '__main__':
-    demo()
+    main()

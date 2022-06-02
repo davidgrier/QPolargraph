@@ -86,7 +86,7 @@ class Motors(QSerialInstrument):
         '''Returns True if motors are running'''
         res = self.handshake('R')
         logger.debug(f'running: {res}')
-        header, running = res.split(':')
+        _, running = res.split(':') if 'R:' in res else 0, 0
         return running == '1'
 
     @pyqtProperty(int, int)
@@ -94,7 +94,7 @@ class Motors(QSerialInstrument):
         '''Current step numbers for motors'''
         try:
             res = self.handshake('P')
-            header, n1, n2 = res.split(':')
+            _, n1, n2 = res.split(':') if 'P:' in res else 0, 0, 0
         except Exception as ex:
             logger.warning(f'Did not read position: {ex}')
             n1 = 0
@@ -111,7 +111,7 @@ class Motors(QSerialInstrument):
         '''Maximum motor speed [steps/s]'''
         try:
             res = self.handshake('V')
-            header, v1, v2 = res.split(':')
+            _, v1, v2 = res.split(':') if 'V:' in res else 0, 0, 0
         except Exception as ex:
             logger.warning(f'Could not read maximum speed: {ex}')
             v1, v2, = 0., 0.
@@ -134,3 +134,25 @@ class Motors(QSerialInstrument):
         self._acceleration = (a1, a2)
         res = self.handshake(f'A:{a1}:{a2}')
         logger.debug(f'acceleration: {res} {a1} {a2}')
+
+
+def main():
+    from PyQt5.QtCore import QCoreApplication
+    import sys
+
+    print('Motor subsystem test')
+    app = QCoreApplication(sys.argv)
+    motors = Motors().find()
+    print(f'Current position: {motors.indexes}')
+    motors.goto(100, 50)
+    if motors.running():
+        print('Running...')
+    while (motors.running()):
+        pass
+    print(f'Final position: {motors.indexes}')
+    motors.close()
+    app.quit()
+
+
+if __name__ == '__main__':
+    main()
