@@ -11,17 +11,21 @@ logger.setLevel(logging.WARNING)
 class Polargraph(Motors):
 
     '''
-    Abstraction of a polargraph
+    PyQt5-compatible abstraction of a polargraph
 
     The polargraph consists of two stepper motors with GT2 gears
     that translate a GT2 timing belt.  The motors are controlled
     by an Arduino microcontroller that is connected to the host
-    computer by USB.  This class communicates with the Arduino to
-    obtain programmed motion from the motors.
+    computer by USB.  This class communicates with the Arduino
+    to control the motion.
 
     ...
 
-    Attributes
+    Inherits
+    --------
+    QPolargraph.Motors
+
+    Properties
     ----------
     ell : float
         Separation between motors [m]
@@ -51,7 +55,7 @@ class Polargraph(Motors):
 
     Methods
     -------
-    goto(x, y)
+    moveTo(x, y)
        Move payload to coordinates (x, y), measured in meters
        from home position.
     '''

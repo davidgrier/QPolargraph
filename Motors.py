@@ -11,11 +11,16 @@ logger.setLevel(logging.WARNING)
 class Motors(QSerialInstrument):
 
     '''
-    Abstraction of stepper moters controlled by Arduino
+    PyQt5-compatible abstraction of a pair of stepper moters 
+    controlled by an Arduino
 
     ...
 
-    Attributes
+    Inherits
+    --------
+    QInstrument.QSerialInstrument
+
+    Properties
     ----------
     indexes : (int, int)
         (n1, n2) Step indexes of two stepper motors.
