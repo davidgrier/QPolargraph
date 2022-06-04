@@ -184,7 +184,7 @@
          <string>Polargraph: Tooth size on timing belt</string>
         </property>
         <property name="suffix">
-         <string> mm</string>
+         <string> mm/cog</string>
         </property>
         <property name="minimum">
          <double>1.000000000000000</double>
@@ -267,7 +267,7 @@
          <string>Polargraph: Units per motor revolution</string>
         </property>
         <property name="suffix">
-         <string> units</string>
+         <string> cogs</string>
         </property>
         <property name="value">
          <number>25</number>
