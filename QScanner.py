@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (QApplication, QMainWindow)
 from PyQt5 import uic
 from PyQt5.QtCore import (Qt, pyqtSignal, pyqtSlot)
+from QInstrument.lib import Configure
 import pyqtgraph as pg
 import logging
 
@@ -22,11 +23,14 @@ class QScanner(QMainWindow):
         self.polargraph = self.ui.polargraph.device
         self.scanner = self.ui.scanner.device
         self.scanner.polargraph = self.polargraph
+        self.config = Configure(configdir='~/.QScanner')
+        self.restoreSettings()
         self._configurePlot()
         self._connectSignals()
 
     def closeEvent(self, event):
         logger.debug(f'Closing: {event.type()}')
+        self.saveSettings()
         self.ui.polargraph.close()
 
     def _loadUi(self, uiFile):
@@ -42,6 +46,8 @@ class QScanner(QMainWindow):
         self.ui.home.clicked.connect(self.handleSignal)
         self.ui.center.clicked.connect(self.handleSignal)
         self.ui.scan.clicked.connect(self.handleSignal)
+        self.ui.actionSaveSettings.triggered.connect(self.saveSettings)
+        self.ui.actionRestoreSettings.triggered.connect(self.restoreSettings)
 
     def _configurePlot(self):
         self.plot = pg.PlotItem()
@@ -98,6 +104,17 @@ class QScanner(QMainWindow):
         action[self.sender()]()
         # self.ui.controls.setEnabled(False)
         # self.ui.buttons.setEnabled(False)
+
+    @pyqtSlot()
+    def saveSettings(self):
+        print('saving scanner and polargraph')
+        self.config.save(self.ui.scanner)
+        self.config.save(self.ui.polargraph)
+
+    @pyqtSlot()
+    def restoreSettings(self):
+        self.config.restore(self.ui.scanner)
+        self.config.restore(self.ui.polargraph)
 
 
 def main():
