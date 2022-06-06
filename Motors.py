@@ -43,7 +43,7 @@ class Motors(QSerialInstrument):
         Returns True if motors are running.
     '''
 
-    settings = dict(baudRate=QSerialInstrument.Baud115200,
+    settings = dict(baudRate=QSerialInstrument.Baud9600,
                     dataBits=QSerialInstrument.Data8,
                     stopBits=QSerialInstrument.OneStop,
                     parity=QSerialInstrument.NoParity,
@@ -109,7 +109,7 @@ class Motors(QSerialInstrument):
         n1, n2 = n
         self.expect(f'P:{n1}:{n2}', 'P')
 
-    @pyqtProperty(float, float)
+    @pyqtProperty(list)
     def motor_speed(self):
         '''Maximum motor speed [steps/s]'''
         try:
@@ -118,12 +118,14 @@ class Motors(QSerialInstrument):
         except Exception as ex:
             logger.warning(f'Could not read maximum speed: {ex}')
             v1, v2, = 0., 0.
-        return float(v1), float(v2)
+        return [float(v1), float(v2)]
 
     @motor_speed.setter
     def motor_speed(self, v):
         v1, v2 = v
-        self.expect(f'V:{v1}:{v2}', 'V')
+        ok = self.expect(f'V:{v1}:{v2}', 'V')
+        if not ok:
+            logger.warning(f'Could not set maximum speed: ({v1},{v2})')
 
     @pyqtProperty(float, float)
     def acceleration(self):
