@@ -86,9 +86,9 @@ class QScanner(QMainWindow):
 
     @pyqtSlot()
     def motionFinished(self):
-        print('motion finished')
-        #self.ui.controls.setEnabled(True)
-        #self.ui.buttons.setEnabled(True)
+        # self.ui.controls.setEnabled(True)
+        # self.ui.buttons.setEnabled(True)
+        pass
 
     @pyqtSlot()
     def handleSignal(self):
@@ -96,12 +96,8 @@ class QScanner(QMainWindow):
                   self.ui.center: self.scanner.center,
                   self.ui.scan: self.scanner.scan}
         action[self.sender()]()
-        #self.ui.controls.setEnabled(False)
-        #self.ui.buttons.setEnabled(False)
-
-    @pyqtSlot()
-    def debug(self):
-        print('scan requested')
+        # self.ui.controls.setEnabled(False)
+        # self.ui.buttons.setEnabled(False)
 
 
 def main():
