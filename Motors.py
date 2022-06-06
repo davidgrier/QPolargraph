@@ -77,7 +77,9 @@ class Motors(QSerialInstrument):
             Index of motor 2
         '''
         logger.debug(f' goto {n1} {n2}')
-        self.expect(f'G:{n1}:{n2}', 'G')
+        ok = self.expect(f'G:{n1}:{n2}', 'G')
+        if not ok:
+            logger.error(f'Could not set target indexes: ({n1},{n2})')
 
     def home(self):
         '''Move to home position'''
@@ -85,7 +87,9 @@ class Motors(QSerialInstrument):
 
     def release(self):
         '''Stop and release motors'''
-        self.expect('S', 'S')
+        ok = self.expect('S', 'S')
+        if not ok:
+            logger.error('Error releasing stepper motors!')
 
     def running(self):
         '''Returns True if motors are running'''
