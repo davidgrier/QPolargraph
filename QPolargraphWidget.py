@@ -1,15 +1,8 @@
-from QInstrument.lib import QInstrumentWidget
+from QInstrument.lib import QThreadedInstrumentWidget
 from QPolargraph.Polargraph import Polargraph
-from PyQt5.QtCore import QThread
-import logging
 
 
-logging.basicConfig()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
-
-class QPolargraphWidget(QInstrumentWidget):
+class QPolargraphWidget(QThreadedInstrumentWidget):
     '''Polargraph scanner
     '''
 
@@ -19,18 +12,6 @@ class QPolargraphWidget(QInstrumentWidget):
                          uiFile='PolargraphWidget.ui',
                          device=device,
                          **kwargs)
-        self._thread = QThread(self)
-        self.device.moveToThread(self._thread)
-        self._thread.start()
-
-    def closeEvent(self, event):
-        logger.debug(f'Closing: {event.type()}')
-        self._thread.quit()
-        self._thread.wait()
-        del self._thread
-        del self._device
-        super().closeEvent(event)
-        event.accept()
 
 
 def main():
@@ -38,9 +19,9 @@ def main():
     from PyQt5.QtWidgets import QApplication
 
     app = QApplication(sys.argv)
-    widget = QPolargraphWidget()
-    widget.show()
-    print(widget.get('ell'))
+    polargraph = QPolargraphWidget()
+    polargraph.show()
+    print(f'Pulley separation: {polargraph.get("ell")} m')
     sys.exit(app.exec_())
 
 

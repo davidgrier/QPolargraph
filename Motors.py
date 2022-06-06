@@ -77,7 +77,7 @@ class Motors(QSerialInstrument):
             Index of motor 2
         '''
         logger.debug(f' goto {n1} {n2}')
-        self.handshake(f'G:{n1}:{n2}')
+        self.expect(f'G:{n1}:{n2}', 'G')
 
     def home(self):
         '''Move to home position'''
@@ -85,31 +85,29 @@ class Motors(QSerialInstrument):
 
     def release(self):
         '''Stop and release motors'''
-        self.send('S')
+        self.expect('S', 'S')
 
     def running(self):
         '''Returns True if motors are running'''
         res = self.handshake('R')
-        logger.debug(f'running: {res}')
-        _, running = res.split(':') if 'R:' in res else 0, 0
-        return running == '1'
+        status = res.split(':')[1] if ('R:' in res) else '0'
+        return status == '1'
 
-    @pyqtProperty(int, int)
+    @pyqtProperty(list)
     def indexes(self):
         '''Current step numbers for motors'''
         try:
             res = self.handshake('P')
-            _, n1, n2 = res.split(':') if 'P:' in res else 0, 0, 0
+            indexes = res.split(':')[1:3] if ('P:' in res) else [0, 0]
         except Exception as ex:
             logger.warning(f'Did not read position: {ex}')
-            n1 = 0
-            n2 = 0
-        return int(n1), int(n2)
+            indexes = [0, 0]
+        return list(map(int, indexes))
 
     @indexes.setter
     def indexes(self, n):
         n1, n2 = n
-        self.send(f'P:{n1}:{n2}')
+        self.expect(f'P:{n1}:{n2}', 'P')
 
     @pyqtProperty(float, float)
     def motor_speed(self):
@@ -125,8 +123,7 @@ class Motors(QSerialInstrument):
     @motor_speed.setter
     def motor_speed(self, v):
         v1, v2 = v
-        res = self.handshake(f'V:{v1}:{v2}')
-        logger.debug(f'speed: {res} {v1} {v2}')
+        self.expect(f'V:{v1}:{v2}', 'V')
 
     @pyqtProperty(float, float)
     def acceleration(self):

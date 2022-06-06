@@ -23,24 +23,24 @@
       <widget class="QWidget" name="scanWidget" native="true">
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
-         <widget class="QWidget" name="widget_2" native="true">
+         <widget class="QWidget" name="buttons" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout">
            <item>
-            <widget class="QPushButton" name="pushButton">
+            <widget class="QPushButton" name="home">
              <property name="text">
               <string>Home</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="pushButton_2">
+            <widget class="QPushButton" name="center">
              <property name="text">
               <string>Center</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="pushButton_3">
+            <widget class="QPushButton" name="scan">
              <property name="text">
               <string>Scan</string>
              </property>
@@ -73,16 +73,11 @@
           <property name="title">
            <string>Scan setup</string>
           </property>
-          <widget class="QWidget" name="scanner" native="true">
-           <property name="geometry">
-            <rect>
-             <x>29</x>
-             <y>70</y>
-             <width>161</width>
-             <height>121</height>
-            </rect>
-           </property>
-          </widget>
+          <layout class="QVBoxLayout" name="verticalLayout_5">
+           <item>
+            <widget class="QRasterScanWidget" name="scanner" native="true"/>
+           </item>
+          </layout>
          </widget>
         </item>
        </layout>
@@ -106,6 +101,12 @@
  <customwidgets>
   <customwidget>
    <class>QPolargraphWidget</class>
+   <extends>QWidget</extends>
+   <header>QPolargraph</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>QRasterScanWidget</class>
    <extends>QWidget</extends>
    <header>QPolargraph</header>
    <container>1</container>

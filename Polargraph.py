@@ -85,7 +85,7 @@ class Polargraph(Motors):
                  steps=200,         # motor steps per revolution
                  ell=1.,            # separation between motors [m]
                  y0=0.1,            # home position [m]
-                 speed=100.,        # desired speed [mm/s]
+                 speed=100.,        # desired speed [steps/s]
                  **kwargs):
 
         super().__init__(**kwargs)
@@ -100,13 +100,10 @@ class Polargraph(Motors):
         self.y0 = y0
         self.speed = speed
 
-        # Busy status for QInstrumentWidget
-        self.busy = self.running
-
     @pyqtProperty(float)
     def ds(self):
-        '''Distance traveled per step [mm]'''
-        return self.pitch * self.circumference / self.steps
+        '''Distance traveled per step [m]'''
+        return 1e-3 * self.pitch * self.circumference / self.steps
 
     @pyqtProperty(float)
     def s0(self):
@@ -118,13 +115,13 @@ class Polargraph(Motors):
         m, n = indexes
         sm = self.s0 + m*self.ds
         sn = self.s0 - n*self.ds
-        x = (sn**2 - sm**2)/(2. * self.ell)
+        x = (sm**2 - sn**2)/(2. * self.ell)
         ysq = (sn**2 + sm**2)/2. - self.ell**2/4. - x**2
         if ysq < 0:
             logger.error('unphysical result: ' +
                          f'{m} {n} {self.s0} {sm} {sn} {ysq}')
         y = np.sqrt(ysq) if ysq >= 0 else self.y0
-        return x, y
+        return [x, y]
 
     @pyqtProperty(float, float)
     def position(self):
@@ -132,7 +129,7 @@ class Polargraph(Motors):
         return self.i2r(self.indexes)
 
     def moveTo(self, x, y):
-        '''Move payload to position (x,y) [mm]'''
+        '''Move payload to position (x,y) [m]'''
         # current motor indexes
         m0, n0 = self.indexes
         # target motor indexes
@@ -140,18 +137,18 @@ class Polargraph(Motors):
         sn = np.sqrt((self.ell/2. - x)**2 + y**2)
         m1 = np.rint((sm - self.s0)/self.ds).astype(int)
         n1 = np.rint((self.s0 - sn)/self.ds).astype(int)
-        logger.debug(f'Path: ({m0}, {n0}) --> ({m1}, {n1})')
+
         # adjust speed so that motors complete motion simulutaneously
-        v = self.speed/self.ds  # speed in steps/s
         if (m0 == m1) or (n0 == n1):
-            vm, vn = v, v
+            vm, vn = self.speed, self.speed
         else:
             f = (float(n1-n0)/float(m1-m0))**2
-            vm = v / np.sqrt(1. + f)
-            vn = np.sqrt(v**2 - vm**2)
+            vm = self.speed / np.sqrt(1. + f)
+            vn = np.sqrt(self.speed**2 - vm**2)
         logger.debug(f'Motor speeds: ({vm}, {vn})')
         self.motor_speed = vm, vn
         # go to target indexes
+        logger.debug(f'Path: ({m0}, {n0}) --> ({m1}, {n1})')
         self.goto(m1, n1)
 
 
