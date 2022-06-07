@@ -3,6 +3,7 @@ from PyQt5 import uic
 from PyQt5.QtCore import (Qt, pyqtSignal, pyqtSlot)
 from QInstrument.lib import Configure
 import pyqtgraph as pg
+import os
 import logging
 
 logging.basicConfig()
@@ -34,7 +35,9 @@ class QScanner(QMainWindow):
         self.ui.polargraph.close()
 
     def _loadUi(self, uiFile):
-        form, _ = uic.loadUiType(uiFile, import_from='QPolargraph')
+        filename = os.path.join(os.path.dirname(__file__), uiFile)
+        form, _ = uic.loadUiType(filename)
+        # form, _ = uic.loadUiType(uiFile, import_from='QPolargraph')
         ui = form()
         ui.setupUi(self)
         return ui
@@ -107,14 +110,15 @@ class QScanner(QMainWindow):
 
     @pyqtSlot()
     def saveSettings(self):
-        print('saving scanner and polargraph')
         self.config.save(self.ui.scanner)
         self.config.save(self.ui.polargraph)
+        self.statusBar().showMessage('Configuration saved')
 
     @pyqtSlot()
     def restoreSettings(self):
         self.config.restore(self.ui.scanner)
         self.config.restore(self.ui.polargraph)
+        self.statusBar().showMessage('Configuration restored')
 
 
 def main():
