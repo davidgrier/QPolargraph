@@ -1,5 +1,6 @@
 from QInstrument.lib import QSerialInstrument
 from PyQt5.QtCore import pyqtProperty
+import numpy as np
 from time import sleep
 import logging
 
@@ -22,19 +23,20 @@ class Motors(QSerialInstrument):
 
     Properties
     ----------
-    indexes : (int, int)
-        (n1, n2) Step indexes of two stepper motors.
-        Setting this property causes the motors to move to (n1, n2).
-    motor_speed : (float, float)
+    indexes : numpy.ndarray(int, int, int)
+        (n1, n2): Step indexes of two stepper motors.
+        status: 1 if motors are running, 0 otherwise.
+        Setting (n1, n2) defines the step counts to be (n1, n2).
+    motor_speed : numpy.ndarray(float, float)
         (v1, v2) Maximum stepper motor speed in steps/second.
-    acceleration : (float, float)
+    acceleration : numpy.ndarray(float, float)
         (a1, a2) Acceleration in steps/second^2.
 
     Methods
     -------
     goto(n1, n2)
-        Set target indexes for stepper motors.  This causes the
-        motors to move from their present indexes to the new values.
+        Set target step counts for stepper motors.  This causes the
+        motors to move to the new values.
     home()
         Equivalent to goto(0, 0)
     release()
@@ -97,16 +99,17 @@ class Motors(QSerialInstrument):
         status = res.split(':')[1] if ('R:' in res) else '0'
         return status == '1'
 
-    @pyqtProperty(list)
+    @pyqtProperty(np.ndarray)
     def indexes(self):
         '''Current step numbers for motors'''
         try:
-            res = self.handshake('P')
-            indexes = res.split(':')[1:3] if ('P:' in res) else [0, 0]
+            status, n1, n2 = self.handshake('P').split(':')
+            indexes = [int(n1), int(n2), int(status == 'R')]
+            logger.debug(f'{indexes}')
         except Exception as ex:
             logger.warning(f'Did not read position: {ex}')
-            indexes = [0, 0]
-        return list(map(int, indexes))
+            indexes = [0, 0, 0]
+        return np.array(indexes)
 
     @indexes.setter
     def indexes(self, n):
@@ -122,7 +125,7 @@ class Motors(QSerialInstrument):
         except Exception as ex:
             logger.warning(f'Could not read maximum speed: {ex}')
             v1, v2, = 0., 0.
-        return [float(v1), float(v2)]
+        return np.array([float(v1), float(v2)])
 
     @motor_speed.setter
     def motor_speed(self, v):
@@ -139,7 +142,7 @@ class Motors(QSerialInstrument):
     @acceleration.setter
     def acceleration(self, a):
         a1, a2 = a
-        self._acceleration = (a1, a2)
+        self._acceleration = np.array([a1, a2])
         res = self.handshake(f'A:{a1}:{a2}')
         logger.debug(f'acceleration: {res} {a1} {a2}')
 

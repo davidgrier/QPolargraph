@@ -79,7 +79,7 @@ class QScanner(QMainWindow):
     @pyqtSlot(list)
     def plotBelt(self, data=None):
         p = self.polargraph
-        xp, yp = p. position if (data is None) else data
+        xp, yp, running = p.position if (data is None) else data
         x = [-p.ell/2., xp, p.ell/2]
         y = [0, yp, 0]
         self.belt.setData(x, y)

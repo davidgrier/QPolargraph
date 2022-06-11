@@ -117,7 +117,12 @@ void getset_position() {
   if (len == 1) {
     n1 = stepper1.currentPosition();
     n2 = stepper2.currentPosition();
-    Serial.print('P');
+    if (is_running) {
+      Serial.print('R');
+    }
+    else {
+      Serial.print('P');
+    }
     Serial.print(':');
     Serial.print(n1);
     Serial.print(':');

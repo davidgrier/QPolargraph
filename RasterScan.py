@@ -30,7 +30,7 @@ class RasterScan(QObject):
     step = Property('step')
     y0 = Property('y0')
 
-    dataReady = pyqtSignal(list)
+    dataReady = pyqtSignal(np.ndarray)
     moveFinished = pyqtSignal()
 
     def __init__(self, *args,
@@ -65,6 +65,7 @@ class RasterScan(QObject):
         return x, y
 
     def isOpen(self):
+        '''Method required for QInstrumentWidget interface'''
         return True
 
     @pyqtSlot()
@@ -95,19 +96,21 @@ class RasterScan(QObject):
         for goal in trajectory:
             logger.debug(f'Moving to: {goal}')
             self.polargraph.moveTo(*goal)
-            while(self.polargraph.running()):
-                self.processMotion()
-                if self._interrupt:
+            while(True):
+                x, y, running = self.polargraph.position
+                if (not running) or self._interrupt:
                     break
-            self.processStep()
+                self.process(np.array([x, y]))
+            else:
+                logger.debug(f'Reached goal: {goal}')
+                self.processStep()
             if self._interrupt:
                 break
         self.polargraph.release()
         self._moving = False
         self.moveFinished.emit()
 
-    def processMotion(self):
-        pos = self.polargraph.position
+    def process(self, pos):
         self.dataReady.emit(pos)
 
     def processStep(self):

@@ -45,7 +45,7 @@ class Polargraph(Motors):
         Distance traveled per motor step [mm]
     s0 : float
         Length of belt from motor to payload at home position [m]
-    position : (x, y)
+    position : numpy.ndarray(float, float)
        Report current coordinates of payload measured in
        meters from home position.
     speed : float
@@ -112,7 +112,7 @@ class Polargraph(Motors):
 
     def i2r(self, indexes):
         '''Convert motor indexes to coordinates [m]'''
-        m, n = indexes
+        m, n, status = indexes
         sm = self.s0 + m*self.ds
         sn = self.s0 - n*self.ds
         x = (sm**2 - sn**2)/(2. * self.ell)
@@ -121,9 +121,9 @@ class Polargraph(Motors):
             logger.error('unphysical result: ' +
                          f'{m} {n} {self.s0} {sm} {sn} {ysq}')
         y = np.sqrt(ysq) if ysq >= 0 else self.y0
-        return [x, y]
+        return np.array([x, y, status])
 
-    @pyqtProperty(float, float)
+    @pyqtProperty(np.ndarray)
     def position(self):
         '''Current coordinates [m]'''
         return self.i2r(self.indexes)
@@ -131,7 +131,7 @@ class Polargraph(Motors):
     def moveTo(self, x, y):
         '''Move payload to position (x,y) [m]'''
         # current motor indexes
-        m0, n0 = self.indexes
+        m0, n0, running = self.indexes
         # target motor indexes
         sm = np.sqrt((self.ell/2. + x)**2 + y**2)
         sn = np.sqrt((self.ell/2. - x)**2 + y**2)
