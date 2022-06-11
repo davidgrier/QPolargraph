@@ -70,8 +70,7 @@ void getset_speed() {
   if (len == 1) {
     v1 = stepper1.maxSpeed();
     v2 = stepper2.maxSpeed();
-    Serial.print('V');
-    Serial.print(':');
+    Serial.print("V:");
     Serial.print(v1);
     Serial.print(':');
     Serial.println(v2);
@@ -117,13 +116,7 @@ void getset_position() {
   if (len == 1) {
     n1 = stepper1.currentPosition();
     n2 = stepper2.currentPosition();
-    if (is_running) {
-      Serial.print('R');
-    }
-    else {
-      Serial.print('P');
-    }
-    Serial.print(':');
+    Serial.print((is_running) ? "R:" : "P:");
     Serial.print(n1);
     Serial.print(':');
     Serial.println(n2);
@@ -137,8 +130,7 @@ void getset_position() {
 }
 
 void query_isrunning() {
-  Serial.print('R');
-  Serial.print(':');
+  Serial.print("R:");
   Serial.println(is_running);
 }
 
@@ -172,11 +164,6 @@ void parse_command() {
   }
   len = 0;
   command_ready = false;
-}
-
-void debug_command() {
-  Serial.print("debug: ");
-  Serial.println(cmd);
 }
 
 void setup() {
