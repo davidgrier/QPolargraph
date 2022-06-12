@@ -1,13 +1,13 @@
 from QInstrument.lib import QThreadedInstrumentWidget
-from QPolargraph.RasterScan import RasterScan
+from QPolargraph.PolarScan import PolarScan as Pattern
 
 
 class QRasterScanWidget(QThreadedInstrumentWidget):
 
-    def __init__(self, *args, **kwargs):
-        device = RasterScan()
+    def __init__(self, *args, pattern=None, **kwargs):
+        pattern = pattern or Pattern()
         super().__init__(*args,
-                         device=device,
+                         device=pattern,
                          uiFile='RasterScanWidget.ui',
                          **kwargs)
         self.polargraph = self.device.polargraph

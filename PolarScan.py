@@ -1,5 +1,5 @@
-from PyQt5.QtCore import (QObject, pyqtProperty, pyqtSlot, pyqtSignal)
 import numpy as np
+from PyQt5.QtCore import (QObject, pyqtProperty, pyqtSignal, pyqtSlot)
 import logging
 
 
@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 
-class RasterScan(QObject):
+class PolarScan(QObject):
 
     def Property(pname):
         key = f'_{pname}'
@@ -33,7 +33,7 @@ class RasterScan(QObject):
     dataReady = pyqtSignal(np.ndarray)
     moveFinished = pyqtSignal()
     scanFinished = pyqtSignal()
-
+    
     def __init__(self, *args,
                  width=0.6,
                  height=0.6,
@@ -61,30 +61,53 @@ class RasterScan(QObject):
         y2 = y1 + self.height
         return [x1, y1, x2, y2]
 
-    def vertices(self):
-        '''Vertices of the scan trajectory
-
-        Returns
-        -------
-        xy: numpy.ndarray
-            (nvertices, 2) array of vertices of scan trajectory
-        '''
+    def radii(self):
+        L = self.polargraph.ell/2
         x1, y1, x2, y2 = self.rect()
-        x = np.arange(x1, x2, self.step*1e-3)
-        y = np.full_like(x, y1)
-        y[1::2] = y2
-        return np.vstack([x, y]).T
+        rmin = np.hypot(x1 + L, y1)
+        rmax = np.hypot(x2 + L, y2)
+        return np.arange(rmin, rmax, self.step*1e-3)
+
+    def intercepts(self, r):
+        p = -self.polargraph.ell/2
+        x1, y1, x2, y2 = self.rect()
+        x1 -= p
+        x2 -= p
+
+        if (r < np.hypot(x2, y1)):
+            r1 = [p + np.sqrt(r**2 - y1**2), y1]
+        else:
+            r1 = [p + x2, np.sqrt(r**2 - x2**2)]
+        if (r < np.hypot(x1, y2)):
+            r2 = [p + x1, np.sqrt(r**2 - x1**2)]
+        else:
+            r2 = [p + np.sqrt(r**2 - y2**2), y2]
+
+        return [r1, r2]
+
+    def vertices(self):
+        xy = np.array([])
+        for n, r in enumerate(self.radii()):
+            p1, p2 = self.intercepts(r)
+            if (n % 2) == 0:
+                p1, p2 = p2, p1
+            xy = np.append(xy, [p1, p2])
+        return xy.reshape(-1, 2)
 
     def trajectory(self):
-        '''Coordinates along the scan path
-
-        Returns
-        -------
-        xy: numpy.ndarray
-            (2, npts) array of x-y coordinates along scan path,
-            suitable for plotting
-        '''
-        return self.vertices().T
+        L = self.polargraph.ell
+        x = np.array([])
+        y = np.array([])
+        points = self.vertices().reshape(-1, 4)
+        for n, r in enumerate(self.radii()):
+            x1, y1, x2, y2 = points[n]
+            s1 = np.sqrt(r**2 - 2.*L*x1)
+            s2 = np.sqrt(r**2 - 2.*L*x2)
+            s = np.linspace(s1, s2)
+            thisx = (r**2 - s**2)/(2.*L)
+            x = np.append(x, thisx)
+            y = np.append(y, np.sqrt(r**2 - (L/2. + thisx)**2))
+        return [x, y]
 
     def isOpen(self):
         '''Method required for QInstrumentWidget interface'''
