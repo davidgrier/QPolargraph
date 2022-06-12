@@ -102,10 +102,16 @@ void set_acceleration() {
   Serial.println('A');
 }
 
+void stop_motors() {
+  stepper1.stop();
+  stepper2.stop();
+  Serial.println('S');
+}
+
 void release_motors() {
   motor1->release();
   motor2->release();
-  Serial.println('S');
+  Serial.println('X');
 }
 
 void query_identity() {
@@ -153,6 +159,9 @@ void parse_command() {
       set_target();
       break;
     case 'S':
+      stop_motors();
+      break;
+    case 'X':
       release_motors();
       break;
     case 'Q':

@@ -87,9 +87,15 @@ class Motors(QSerialInstrument):
         '''Move to home position'''
         self.goto(0, 0)
 
-    def release(self):
-        '''Stop and release motors'''
+    def stop(self):
+        '''Stop motion'''
         ok = self.expect('S', 'S')
+        if not ok:
+            logger.error('Error stopping motion')
+
+    def release(self):
+        '''De-energize motor coils'''
+        ok = self.expect('X', 'X')
         if not ok:
             logger.error('Error releasing stepper motors!')
 

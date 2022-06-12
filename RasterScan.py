@@ -141,3 +141,7 @@ class RasterScan(QObject):
 
     def processStep(self):
         pass
+
+    @pyqtSlot()
+    def interrupt(self):
+        self._interrupt = True

@@ -33,7 +33,7 @@ class PolarScan(QObject):
     dataReady = pyqtSignal(np.ndarray)
     moveFinished = pyqtSignal()
     scanFinished = pyqtSignal()
-    
+
     def __init__(self, *args,
                  width=0.6,
                  height=0.6,
@@ -146,8 +146,10 @@ class PolarScan(QObject):
             logger.debug(f'Moving to: {vertex}')
             self.polargraph.moveTo(*vertex)
             while(True):
+                if self._interrupt:
+                    self.polargraph.stop()
                 x, y, running = self.polargraph.position
-                if (not running) or self._interrupt:
+                if (not running):
                     break
                 self.process(np.array([x, y]))
             else:
@@ -157,6 +159,7 @@ class PolarScan(QObject):
                 break
         self.polargraph.release()
         self._moving = False
+        self._interrupt = False
         self.moveFinished.emit()
 
     def process(self, pos):
@@ -164,3 +167,7 @@ class PolarScan(QObject):
 
     def processStep(self):
         pass
+
+    @pyqtSlot()
+    def interrupt(self):
+        self._interrupt = True
