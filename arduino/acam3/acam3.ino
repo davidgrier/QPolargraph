@@ -17,6 +17,8 @@
 #include <AccelStepper.h>
 #include <Adafruit_MotorShield.h>
 
+#define VERSION "acam 3.1.0"
+
 Adafruit_MotorShield AFMS(0x60);
 Adafruit_StepperMotor *motor1 = AFMS.getStepper(200, 1);
 Adafruit_StepperMotor *motor2 = AFMS.getStepper(200, 2);
@@ -165,7 +167,7 @@ void parse_command() {
       release_motors();
       break;
     case 'Q':
-      query_identity();
+      Serial.println(VERSION);
       break;
     default:
       Serial.println(cmd);

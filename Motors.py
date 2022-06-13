@@ -1,12 +1,16 @@
 from QInstrument.lib import QSerialInstrument
 from PyQt5.QtCore import pyqtProperty
 import numpy as np
+from parse import parse
 from time import sleep
 import logging
 
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
+
+
+__version__ = '3.1.0'
 
 
 class Motors(QSerialInstrument):
@@ -56,14 +60,19 @@ class Motors(QSerialInstrument):
         super().__init__(portName, **self.settings, **kwargs)
 
     def identify(self):
-        version = 'acam3'
         logger.info(f' Trying {self.portName()}...')
         sleep(2)
         res = self.handshake('Q')
         logger.debug(f' Received: {res}')
-        acam = version in res
-        logger.info(f' Arduino running {version}: {acam}')
-        return acam
+        if 'acam' not in res:
+            return False
+        version = parse('acam{:>}', res)[0]
+        if version != __version__:
+            logger.error(f' Arduino is running acam3 version {version}')
+            logger.error(f' Install version {__version__}')
+            return False
+        logger.info(f' Arduino running acam {version}')
+        return True
 
     def process(self, data):
         logger.debug(f' received: {data}')
