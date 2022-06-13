@@ -1,8 +1,8 @@
-from QInstrument.lib import QThreadedInstrumentWidget
+from QInstrument.lib import QInstrumentWidget
 from QPolargraph.PolarScan import PolarScan as Pattern
 
 
-class QRasterScanWidget(QThreadedInstrumentWidget):
+class QRasterScanWidget(QInstrumentWidget):
 
     def __init__(self, *args, pattern=None, **kwargs):
         pattern = pattern or Pattern()
