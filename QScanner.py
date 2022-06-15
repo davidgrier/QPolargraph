@@ -47,8 +47,8 @@ class QScanner(QMainWindow):
         self.scanner.dataReady.connect(self.plotBelt)
         self.scanner.moveFinished.connect(self.motionFinished)
         self.scanner.scanFinished.connect(self.scanFinished)
-        self.ui.home.clicked.connect(self.handleSignal)
-        self.ui.center.clicked.connect(self.handleSignal)
+        self.ui.home.clicked.connect(self.scanner.home)
+        self.ui.center.clicked.connect(self.scanner.center)
         self.ui.scan.clicked.connect(self.handleScan)
         self.ui.actionSaveSettings.triggered.connect(self.saveSettings)
         self.ui.actionRestoreSettings.triggered.connect(self.restoreSettings)
@@ -121,15 +121,6 @@ class QScanner(QMainWindow):
         self.ui.polargraph.setEnabled(True)
         self.ui.scanner.setEnabled(True)
         self.statusBar().showMessage('Scan complete')
-
-    @pyqtSlot()
-    def handleSignal(self):
-        action = {self.ui.home: self.scanner.home,
-                  self.ui.center: self.scanner.center,
-                  self.ui.scan: self.scanner.scan}
-        action[self.sender()]()
-        # self.ui.controls.setEnabled(False)
-        # self.ui.buttons.setEnabled(False)
 
     @pyqtSlot()
     def saveSettings(self):
