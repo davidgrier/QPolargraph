@@ -37,7 +37,6 @@ class QScanner(QMainWindow):
     def _loadUi(self, uiFile):
         filename = os.path.join(os.path.dirname(__file__), uiFile)
         form, _ = uic.loadUiType(filename)
-        # form, _ = uic.loadUiType(uiFile, import_from='QPolargraph')
         ui = form()
         ui.setupUi(self)
         return ui

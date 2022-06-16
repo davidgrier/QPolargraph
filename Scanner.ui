@@ -149,7 +149,8 @@
     </property>
     <addaction name="actionSaveSettings"/>
     <addaction name="actionRestoreSettings"/>
-    <addaction name="actionSave_Data"/>
+    <addaction name="actionSaveData"/>
+    <addaction name="actionSaveDataAs"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -171,9 +172,14 @@
     <string>Quit</string>
    </property>
   </action>
-  <action name="actionSave_Data">
+  <action name="actionSaveData">
    <property name="text">
     <string>Save Data</string>
+   </property>
+  </action>
+  <action name="actionSaveDataAs">
+   <property name="text">
+    <string>Save Data As ...</string>
    </property>
   </action>
  </widget>
