@@ -15,16 +15,18 @@ class QScanner(QMainWindow):
 
     data = pyqtSignal(list)
     finished = pyqtSignal()
+    uiFile = 'Scanner.ui'
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, configdir=None, **kwargs):
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
         super().__init__(*args, **kwargs)
-        self.ui = self._loadUi('Scanner.ui')
+        self.ui = self._loadUi(self.uiFile)
         self.polargraph = self.ui.polargraph.device
         self.scanner = self.ui.scanner.device
         self.scanner.polargraph = self.polargraph
-        self.config = Configure(configdir='~/.QScanner')
+        configdir = configdir or '~/.QScanner'
+        self.config = Configure(configdir=configdir)
         self.restoreSettings()
         self._configurePlot()
         self._connectSignals()
