@@ -131,7 +131,7 @@ class Motors(QSerialInstrument):
         n1, n2 = n
         self.expect(f'P:{n1}:{n2}', 'P')
 
-    @pyqtProperty(list)
+    @pyqtProperty(np.ndarray)
     def motor_speed(self):
         '''Maximum motor speed [steps/s]'''
         try:
@@ -149,7 +149,7 @@ class Motors(QSerialInstrument):
         if not ok:
             logger.warning(f'Could not set maximum speed: ({v1},{v2})')
 
-    @pyqtProperty(float, float)
+    @pyqtProperty(np.ndarray)
     def acceleration(self):
         '''Acceleration [steps/s^2]'''
         return self._acceleration
