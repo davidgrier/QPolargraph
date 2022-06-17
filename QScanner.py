@@ -43,12 +43,12 @@ class QScanner(QMainWindow):
 
     def _connectSignals(self):
         self.ui.scanner.propertyChanged.connect(self.handleChange)
+        self.ui.scan.clicked.connect(self.handleScan)
         self.scanner.dataReady.connect(self.plotBelt)
         self.scanner.moveFinished.connect(self.motionFinished)
         self.scanner.scanFinished.connect(self.scanFinished)
         self.ui.home.clicked.connect(self.scanner.home)
         self.ui.center.clicked.connect(self.scanner.center)
-        self.ui.scan.clicked.connect(self.handleScan)
         self.ui.actionSaveSettings.triggered.connect(self.saveSettings)
         self.ui.actionRestoreSettings.triggered.connect(self.restoreSettings)
 
@@ -60,20 +60,25 @@ class QScanner(QMainWindow):
         self.plot.showGrid(True, True, 0.2)
 
         pen = pg.mkPen('r', style=Qt.DotLine)
-        self.trajectory = pg.PlotDataItem(pen=pen)
-        self.plot.addItem(self.trajectory)
+        self.trajectoryPlot = pg.PlotDataItem(pen=pen)
+        self.plot.addItem(self.trajectoryPlot)
         self.plotTrajectory()
 
         pen = pg.mkPen('k', thick=3)
         brush = pg.mkBrush('y')
-        self.belt = pg.PlotDataItem(pen=pen, symbol='o',
-                                    symbolPen=pen, symbolBrush=brush)
-        self.plot.addItem(self.belt)
+        self.beltPlot = pg.PlotDataItem(pen=pen, symbol='o',
+                                        symbolPen=pen, symbolBrush=brush)
+        self.plot.addItem(self.beltPlot)
         self.plotBelt()
 
+        pen = pg.mkPen('k', thick=0)
+        self.dataPlot = pg.ScatterPlotItem(pen=None)
+        self.plot.addItem(self.dataPlot)
+
+    @pyqtSlot()
     def plotTrajectory(self):
         x, y = self.scanner.trajectory()
-        self.trajectory.setData(x, y)
+        self.trajectoryPlot.setData(x, y)
 
     @pyqtSlot()
     @pyqtSlot(list)
@@ -82,11 +87,13 @@ class QScanner(QMainWindow):
         xp, yp, running = p.position if (data is None) else data
         x = [-p.ell/2., xp, p.ell/2]
         y = [0, yp, 0]
-        self.belt.setData(x, y)
+        self.beltPlot.setData(x, y)
         QApplication.processEvents()
 
-    def plotData(self):
-        pass
+    def plotDataPoint(self, position, hue):
+        x, y = position
+        brush = pg.mkBrush(color=pg.hsvColor(hue))
+        self.dataPlot.addPoints([x], [y], brush=brush)
 
     @pyqtSlot(str, object)
     def handleChange(self, name, value):
@@ -101,17 +108,25 @@ class QScanner(QMainWindow):
 
     @pyqtSlot()
     def handleScan(self):
-        if self.polargraph.running():
-            self.statusBar().showMessage('Aborting scan')
-            self.scanner.interrupt()
-            self.ui.scan.setText('Stopping')
-            self.ui.scan.setEnabled(False)
+        if not self.polargraph.running():
+            self.scanStarted()
         else:
-            self.statusBar().showMessage('Scanning...')
-            self.ui.scan.setText('Stop')
-            self.ui.polargraph.setEnabled(False)
-            self.ui.scanner.setEnabled(False)
-            self.scanner.scan()
+            self.scanAborted()
+
+    @pyqtSlot()
+    def scanStarted(self):
+        self.statusBar().showMessage('Scanning...')
+        self.ui.scan.setText('Stop')
+        self.ui.polargraph.setEnabled(False)
+        self.ui.scanner.setEnabled(False)
+        self.scanner.scan()
+
+    @pyqtSlot()
+    def scanAborted(self):
+        self.statusBar().showMessage('Aborting scan')
+        self.scanner.interrupt()
+        self.ui.scan.setText('Stopping')
+        self.ui.scan.setEnabled(False)
 
     @pyqtSlot()
     def scanFinished(self):
