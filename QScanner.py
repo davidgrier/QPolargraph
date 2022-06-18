@@ -16,14 +16,16 @@ class QScanner(QMainWindow):
 
     Properties
     ----------
-    polargraph: QPolargraph
-        hardware interface to Polargraph scanner
-    scanner: QPolarScan
-        control interface to scan pattern
     configdir: str
         directory name for storing instrument configuration data
         Default: ~/.QScanner
-    
+
+    Methods
+    -------
+    showStatus(message: str):
+        Convenience method to print message on the status bar.
+    plotDataPoint(position: listlike, hue: float):
+        Plot point at position (x, y) with hue in [0, 1].
 
     Signals
     -------
@@ -64,10 +66,9 @@ class QScanner(QMainWindow):
         return ui
 
     def _connectSignals(self):
-        self.ui.scanner.propertyChanged.connect(self.handleChange)
-        self.ui.scan.clicked.connect(self.handleScan)
+        self.ui.scan.clicked.connect(self.toggleScan)
+        self.ui.scanner.propertyChanged.connect(self.updatePlot)
         self.scanner.dataReady.connect(self.plotBelt)
-        self.scanner.moveFinished.connect(self.motionFinished)
         self.scanner.scanFinished.connect(self.scanFinished)
         self.ui.home.clicked.connect(self.scanner.home)
         self.ui.center.clicked.connect(self.scanner.center)
@@ -97,6 +98,11 @@ class QScanner(QMainWindow):
         self.dataPlot = pg.ScatterPlotItem(pen=None)
         self.plot.addItem(self.dataPlot)
 
+    @pyqtSlot(str, object)
+    def updatePlot(self, name, value):
+        self.plotTrajectory()
+        self.plotBelt()
+
     @pyqtSlot()
     def plotTrajectory(self):
         x, y = self.scanner.trajectory()
@@ -117,17 +123,8 @@ class QScanner(QMainWindow):
         brush = pg.mkBrush(color=pg.hsvColor(hue))
         self.dataPlot.addPoints([x], [y], brush=brush)
 
-    @pyqtSlot(str, object)
-    def handleChange(self, name, value):
-        self.plotBelt()
-        self.plotTrajectory()
-
     @pyqtSlot()
-    def motionFinished(self):
-        pass
-
-    @pyqtSlot()
-    def handleScan(self):
+    def toggleScan(self):
         if not self.polargraph.running():
             self.scanStarted()
         else:
