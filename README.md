@@ -32,3 +32,9 @@ controlling computer through its USB interface.
 2. [PyQt5](https://pypi.org/project/PyQt5/)
 3. [pyqtgraph](https://www.pyqtgraph.org/)
 4. [Arduino](https://www.arduino.cc/)
+
+## Acknowledgements
+
+Work on this project at New York University is supported by
+the National Science Foundation of the United States under award
+number DMR-2104837
