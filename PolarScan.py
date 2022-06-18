@@ -52,6 +52,7 @@ class PolarScan(QObject):
         self.y0 = y0
         self.polargraph = polargraph
         self._moving = False
+        self._scanning = False
         self._interrupt = False
 
     def rect(self):
@@ -127,46 +128,45 @@ class PolarScan(QObject):
     @pyqtSlot()
     def scan(self):
         '''Perform scan'''
-        if self._moving:
-            self._interrupt = True
-        else:
-            self.moveTo(self.vertices())
+        if not self._moving:
+            vertices = self.vertices()
+            self.moveTo([vertices[0, :]])
+            self._scanning = True
+            self.moveTo(vertices[1:, :])
+            self._scanning = False
+            self._interrupt = False
+            self.home()
             self.scanFinished.emit()
+        else:
+            self._interrupt = True
+
+    def scanning(self):
+        return self._scanning
 
     @pyqtSlot(list)
     def moveTo(self, vertices):
         '''Move polargraph to vertices'''
         if self.polargraph is None:
             return
-        if self._moving or self._interrupt:
+        if self._interrupt:
             self._interrupt = False
             return
-        self._moving = True
         for vertex in vertices:
             logger.debug(f'Moving to: {vertex}')
             self.polargraph.moveTo(*vertex)
             while(True):
                 if self._interrupt:
                     self.polargraph.stop()
-                x, y, running = self.polargraph.position
-                if (not running):
+                x, y, self._moving = self.polargraph.position
+                if not self._moving:
                     break
-                self.process(np.array([x, y]))
+                self.dataReady.emit(np.array([x, y]))
             else:
                 logger.debug(f'Reached goal: {vertex}')
-                self.processStep()
             if self._interrupt:
                 break
         self.polargraph.release()
-        self._moving = False
-        self._interrupt = False
         self.moveFinished.emit()
-
-    def process(self, pos):
-        self.dataReady.emit(pos)
-
-    def processStep(self):
-        pass
 
     @pyqtSlot()
     def interrupt(self):

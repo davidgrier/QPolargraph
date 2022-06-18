@@ -12,9 +12,28 @@ logger.setLevel(logging.WARNING)
 
 
 class QScanner(QMainWindow):
+    '''Framework for a Polargraph scanner application
+
+    Properties
+    ----------
+    polargraph: QPolargraph
+        hardware interface to Polargraph scanner
+    scanner: QPolarScan
+        control interface to scan pattern
+    configdir: str
+        directory name for storing instrument configuration data
+        Default: ~/.QScanner
+    
+
+    Signals
+    -------
+    data: list
+        Emitted when data is ready.
+        data: [x, y] current position of polargraph [m]
+    '''
 
     data = pyqtSignal(list)
-    finished = pyqtSignal()
+
     uiFile = 'Scanner.ui'
 
     def __init__(self, *args, configdir=None, **kwargs):
@@ -22,6 +41,7 @@ class QScanner(QMainWindow):
         pg.setConfigOption('foreground', 'k')
         super().__init__(*args, **kwargs)
         self.ui = self._loadUi(self.uiFile)
+        self.showStatus = self.statusBar().showMessage
         self.polargraph = self.ui.polargraph.device
         self.scanner = self.ui.scanner.device
         self.scanner.polargraph = self.polargraph
@@ -104,8 +124,6 @@ class QScanner(QMainWindow):
 
     @pyqtSlot()
     def motionFinished(self):
-        # self.ui.controls.setEnabled(True)
-        # self.ui.buttons.setEnabled(True)
         pass
 
     @pyqtSlot()
@@ -117,7 +135,7 @@ class QScanner(QMainWindow):
 
     @pyqtSlot()
     def scanStarted(self):
-        self.statusBar().showMessage('Scanning...')
+        self.showStatus('Scanning...')
         self.ui.scan.setText('Stop')
         self.ui.polargraph.setEnabled(False)
         self.ui.scanner.setEnabled(False)
@@ -125,7 +143,7 @@ class QScanner(QMainWindow):
 
     @pyqtSlot()
     def scanAborted(self):
-        self.statusBar().showMessage('Aborting scan')
+        self.showStatus('Aborting scan')
         self.scanner.interrupt()
         self.ui.scan.setText('Stopping')
         self.ui.scan.setEnabled(False)
@@ -136,19 +154,19 @@ class QScanner(QMainWindow):
         self.ui.scan.setEnabled(True)
         self.ui.polargraph.setEnabled(True)
         self.ui.scanner.setEnabled(True)
-        self.statusBar().showMessage('Scan complete')
+        self.showStatus('Scan complete')
 
     @pyqtSlot()
     def saveSettings(self):
         self.config.save(self.ui.scanner)
         self.config.save(self.ui.polargraph)
-        self.statusBar().showMessage('Configuration saved')
+        self.showStatus('Configuration saved')
 
     @pyqtSlot()
     def restoreSettings(self):
         self.config.restore(self.ui.scanner)
         self.config.restore(self.ui.polargraph)
-        self.statusBar().showMessage('Configuration restored')
+        self.showStatus('Configuration restored')
 
 
 def main():
