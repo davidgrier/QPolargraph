@@ -67,6 +67,7 @@ class QScanner(QMainWindow):
 
     def _connectSignals(self):
         self.ui.scan.clicked.connect(self.toggleScan)
+        self.ui.polargraph.propertyChanged.connect(self.updatePlot)
         self.ui.scanner.propertyChanged.connect(self.updatePlot)
         self.scanner.dataReady.connect(self.plotBelt)
         self.scanner.scanFinished.connect(self.scanFinished)
