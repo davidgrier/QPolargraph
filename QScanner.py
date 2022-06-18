@@ -136,9 +136,10 @@ class QScanner(QMainWindow):
     @pyqtSlot()
     def scanStarted(self):
         self.showStatus('Scanning...')
-        self.ui.scan.setText('Stop')
-        self.ui.polargraph.setEnabled(False)
-        self.ui.scanner.setEnabled(False)
+        ui = self.ui
+        ui.scan.setText('Stop')
+        for w in [ui.center, ui.home, ui.polargraph, ui.scanner]:
+            w.setEnabled(False)
         self.scanner.scan()
 
     @pyqtSlot()
@@ -150,10 +151,10 @@ class QScanner(QMainWindow):
 
     @pyqtSlot()
     def scanFinished(self):
-        self.ui.scan.setText('Scan')
-        self.ui.scan.setEnabled(True)
-        self.ui.polargraph.setEnabled(True)
-        self.ui.scanner.setEnabled(True)
+        ui = self.ui
+        ui.scan.setText('Scan')
+        for w in [ui.scan, ui.center, ui.home, ui.polargraph, ui.scanner]:
+            w.setEnabled(True)
         self.showStatus('Scan complete')
 
     @pyqtSlot()
