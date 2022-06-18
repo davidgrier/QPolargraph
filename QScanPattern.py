@@ -8,27 +8,40 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
 
-class ScanPattern(QObject):
+class Property(pyqtProperty):
 
-    def Property(pname):
-        key = f'_{pname}'
+    def __init__(self, value, name=''):
+        super().__init__(type(value), self.getter, self.setter)
+        self.value = value
+        self.name = name
 
-        def getter(self):
-            value = getattr(self, key)
-            logger.debug(f'Getting: {key} {value}')
-            return value
+    def getter(self, inst=None):
+        logger.debug(f'Getting {self.name}')
+        return self.value
 
-        def setter(self, value):
-            logger.debug(f'Setting: {key} {value}')
-            setattr(self, key, value)
-        return pyqtProperty(float, getter, setter)
+    def setter(self, inst=None, value=None):
+        logger.debug(f'Setting {self.name}: {value}')
+        self.value = value
 
-    width = Property('width')
-    height = Property('height')
-    dx = Property('dx')
-    dy = Property('dy')
-    step = Property('step')
-    y0 = Property('y0')
+
+class PropertyMeta(type(QObject)):
+    def __new__(mcs, name, bases, attrs):
+        for key in list(attrs.keys()):
+            attr = attrs[key]
+            if not isinstance(attr, Property):
+                continue
+            value = attr.value
+            attrs[key] = Property(value, key)
+        return super().__new__(mcs, name, bases, attrs)
+
+
+class QScanPattern(QObject, metaclass=PropertyMeta):
+
+    width = Property(0.6)
+    height = Property(0.6)
+    dx = Property(0.)
+    dy = Property(0.)
+    step = Property(5.)
 
     dataReady = pyqtSignal(np.ndarray)
     moveFinished = pyqtSignal()
@@ -40,7 +53,6 @@ class ScanPattern(QObject):
                  dx=0.,
                  dy=0.1,
                  step=5,
-                 y0=0.1,
                  polargraph=None,
                  **kwargs):
         super().__init__(*args, **kwargs)
@@ -49,7 +61,6 @@ class ScanPattern(QObject):
         self.dx = dx
         self.dy = dy
         self.step = step
-        self.y0 = y0
         self.polargraph = polargraph
         self._moving = False
         self._scanning = False
@@ -57,18 +68,31 @@ class ScanPattern(QObject):
 
     def rect(self):
         x1 = self.dx - self.width/2.
-        y1 = self.y0 + self.dy
+        y1 = self.polargraph.y0 + self.dy
         x2 = x1 + self.width
         y2 = y1 + self.height
         return [x1, y1, x2, y2]
 
     def vertices(self):
-        '''Returns array of target positions for polargraph motions'''
+        '''Vertices of the scan trajectory
+
+        Returns
+        -------
+        xy: numpy.ndarray
+            (nvertices, 2) array of vertices of scan trajectory
+        '''
         x1, y1, x2, y2 = self.rect()
         return np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2], [x1, y1]])
 
     def trajectory(self):
-        '''Returns array of points along the planned trajectory for plotting'''
+        '''Coordinates along the scan path
+
+        Returns
+        -------
+        xy: numpy.ndarray
+            (2, npts) array of x-y coordinates along scan path,
+            suitable for plotting
+        '''
         return self.vertices()
 
     def isOpen(self):
@@ -78,12 +102,12 @@ class ScanPattern(QObject):
     @pyqtSlot()
     def home(self):
         '''Move payload to home position: (0, y0)'''
-        self.moveTo([[0., self.y0]])
+        self.moveTo([[0., self.polargraph.y0]])
 
     @pyqtSlot()
     def center(self):
         '''Move payload to center of scan range'''
-        y = self.y0 + self.dy + self.height/2.
+        y = self.polargraph.y0 + self.dy + self.height/2.
         self.moveTo([[self.dx, y]])
 
     @pyqtSlot()
