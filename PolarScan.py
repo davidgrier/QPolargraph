@@ -130,15 +130,14 @@ class PolarScan(QObject):
         '''Perform scan'''
         if not self._moving:
             vertices = self.vertices()
-            self.moveTo([vertices[0, :]])
-            self._scanning = True
-            self.moveTo(vertices[1:, :])
-            self._scanning = False
-            self._interrupt = False
+            if self.moveTo([vertices[0, :]]):
+                self._scanning = True
+                self.moveTo(vertices[1:, :])
+                self._scanning = False
             self.home()
             self.scanFinished.emit()
         else:
-            self._interrupt = True
+            self.interrupt()
 
     def scanning(self):
         return self._scanning
@@ -147,10 +146,7 @@ class PolarScan(QObject):
     def moveTo(self, vertices):
         '''Move polargraph to vertices'''
         if self.polargraph is None:
-            return
-        if self._interrupt:
-            self._interrupt = False
-            return
+            return False
         for vertex in vertices:
             logger.debug(f'Moving to: {vertex}')
             self.polargraph.moveTo(*vertex)
@@ -165,8 +161,11 @@ class PolarScan(QObject):
                 logger.debug(f'Reached goal: {vertex}')
             if self._interrupt:
                 break
+        success = not self._interrupt
+        self._interrupt = False
         self.polargraph.release()
         self.moveFinished.emit()
+        return success
 
     @pyqtSlot()
     def interrupt(self):
