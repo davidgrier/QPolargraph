@@ -3,10 +3,12 @@
  * Sketch to control stepper motors via serial interface
  *
  * Commands implemented with examples:
+ * - Q : Query software version
  * - V:500 : Set motor speed to 500 steps/second
+ * - A:100 : Set motor acceleration to 100 steps/second^2
  * - G:-1000:50 : Move motor 1 to position -1000 and motor 2 to 50
- * - S : Stop (release) motors
- * - Q : Query software ID
+ * - S : Stop
+ * - X : Release motors
  * - P : Query position of motors
  * - R : Query whether motors are running
  */
