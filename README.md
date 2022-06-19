@@ -1,13 +1,18 @@
 # QPolargraph
 PyQt5 implementation of a two-dimensional mechanical scanner.
 
-A polargraph is a device that can translate a payload to an arbitrary
-position within its scan area. The hardware implementation consists
-of a toothed belt suspended between two stepping motors that
+A [polargraph](http://www.polargraph.co.uk/) 
+is a device that can translate a payload to an arbitrary
+position within its scan area. Originally developed by Sandy Noble as
+an automated drawing machine, this class of scanners is easy to set up,
+scales naturally to large scan areas, offers millimeter-scale precision and accuracy, 
+and is very cost-effective. The version used in this project consists
+of a GT2 toothed belt suspended between two Nema-17 stepping motors that
 are positioned above and outside the scan area. Each stepping motor
-has a toothed gear that engages with the teeth in the belt. 
-The payload is attached to the belt and moves when the stepping motors
-turn.
+has a toothed gear that engages with the belt.
+The payload is attached to the middle of the belt and hangs down from
+the motors, forming the belt into a V shape. The motors move the payload
+by changing the lengths of the two sides of the V.
 
 The stepping motors are controlled by an
 [Arduino](https://www.arduino.cc/) 
