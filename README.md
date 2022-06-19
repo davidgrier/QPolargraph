@@ -3,34 +3,36 @@ PyQt5 implementation of a two-dimensional mechanical scanner.
 
 A [polargraph](http://www.polargraph.co.uk/) 
 is a device that can translate a payload to an arbitrary
-position within its scan area. Originally developed by Sandy Noble as
-an automated drawing machine, this class of scanners is easy to set up,
+position within its scan area.
+[Originally developed](http://juerglehni.com/works/hektor) by
+Jürg Lehni and Uli Franke as an automated drawing machine, this class of scanners is easy to set up,
 scales naturally to large scan areas, offers millimeter-scale precision and accuracy, 
-and is very cost-effective. The version used in this project consists
-of a GT2 toothed belt suspended between two Nema-17 stepping motors that
+and is very cost-effective.
+
+The hardware implementation in this project consists
+of a GT2 timing belt suspended between two Nema-17 stepping motors that
 are positioned above and outside the scan area. Each stepping motor
 has a toothed gear that engages with the belt.
 The payload is attached to the middle of the belt and hangs down from
 the motors, forming the belt into a V shape. The motors move the payload
 by changing the lengths of the two sides of the V.
-
 The stepping motors are controlled by an
 [Arduino](https://www.arduino.cc/) 
 microcontroller outfitted with an
 [Adafruit Motor Shield](https://www.adafruit.com/product/1438).
+The Arduino is connected to the controlling computer through its USB interface.
 
-This interface is intended for use in GUI applications created with
-the PyQt5 widget framework. The Arduino should be connected to the
-controlling computer through its USB interface.
+The software interface provided in this repository is intended
+for use in GUI applications created with
+the PyQt5 widget framework. 
 
 ## Software Setup
-1. Use the Arduino application to read `acam3.ino`, which is located
-   in the `arduino/acam3/` subdirectory.
-   Compile the sketch and upload it to the Arduino.
-   
-2. `Polargraph.py` provides serial communication with the hardware.
-
-3. `QPolargraphWidget.py` provides a GUI interface for controlling the hardware.
+1. Use the Arduino application to load [`acam3.ino`](/arduino/acam3/acam.ino) onto the Arduino.
+2. [`Polargraph.py`](/Polargraph.py) provides serial communication with the hardware.
+3. [`QPolargraphWidget.py`](/QPolargraphWidget.py) provides a GUI interface for controlling the hardware.
+4. [`QScanner.py`](/QScanner.py) is an application framework that controls the scanner and
+provides real-time graphical feedback of a scan. It is intended to be subclassed for
+larger-scale applications.
 
 ## Dependencies
 1. [QInstrument](https://github.com/davidgrier/QInstrument)
