@@ -27,7 +27,7 @@ for use in GUI applications created with
 the PyQt5 widget framework. 
 
 ## Software Setup
-1. Use the Arduino application to load [`acam3.ino`](/arduino/acam3/acam.ino) onto the Arduino.
+1. Use the Arduino application to load [`acam3.ino`](/arduino/acam3/acam3.ino) onto the Arduino.
 2. [`Polargraph.py`](/Polargraph.py) provides serial communication with the hardware.
 3. [`QPolargraphWidget.py`](/QPolargraphWidget.py) provides a GUI interface for controlling the hardware.
 4. [`QScanner.py`](/QScanner.py) is an application framework that controls the scanner and
