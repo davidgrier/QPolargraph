@@ -24,7 +24,9 @@ The Arduino is connected to the controlling computer through its USB interface.
 
 The software interface provided in this repository is intended
 for use in GUI applications created with
-the PyQt5 widget framework. 
+the PyQt5 widget framework.
+
+<img src="docs/QScanner.png" width="75%" alt="QScanner interface">
 
 ## Software Setup
 1. Use the Arduino application to load [`acam3.ino`](/arduino/acam3/acam3.ino) onto the Arduino.
@@ -44,4 +46,4 @@ larger-scale applications.
 
 Work on this project at New York University is supported by
 the National Science Foundation of the United States under award
-number DMR-2104837
+number DMR-2104837.
