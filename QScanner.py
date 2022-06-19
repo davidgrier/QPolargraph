@@ -3,6 +3,7 @@ from PyQt5 import uic
 from PyQt5.QtCore import (Qt, pyqtSignal, pyqtSlot)
 from QInstrument.lib import Configure
 import pyqtgraph as pg
+import numpy as np
 import os
 import logging
 
@@ -24,7 +25,7 @@ class QScanner(QMainWindow):
     -------
     showStatus(message: str):
         Convenience method to print message on the status bar.
-    plotDataPoint(position: listlike, hue: float):
+    plotData(position: listlike, hue: float):
         Plot point at position (x, y) with hue in [0, 1].
 
     Signals
@@ -119,10 +120,12 @@ class QScanner(QMainWindow):
         self.beltPlot.setData(x, y)
         QApplication.processEvents()
 
-    def plotDataPoint(self, position, hue):
-        x, y = position
-        brush = pg.mkBrush(color=pg.hsvColor(hue))
-        self.dataPlot.addPoints([x], [y], brush=brush)
+    def plotData(self, x, y, hue):
+        x = np.atleast_1d(x)
+        y = np.atleast_1d(y)
+        # brush = pg.mkBrush(color=pg.hsvColor(hue))
+        brush = [pg.hsvColor(h) for h in np.atleast_1d(hue)]
+        self.dataPlot.addPoints(x, y, brush=brush)
 
     @pyqtSlot()
     def toggleScan(self):
