@@ -135,6 +135,8 @@ class Motors(QSerialInstrument):
 
     def running(self) -> bool:
         '''Return ``True`` if the motors are currently moving.'''
+        if not self.isOpen():
+            return False
         res = self.handshake('R')
         status = res.split(':')[1] if ('R:' in res) else '0'
         return status == '1'
@@ -142,6 +144,8 @@ class Motors(QSerialInstrument):
     @property
     def indexes(self) -> np.ndarray:
         '''Current step counts ``(n1, n2, status)`` for both motors.'''
+        if not self.isOpen():
+            return np.array([0, 0, 0])
         try:
             status, n1, n2 = self.handshake('P').split(':')
             indexes = [int(n1), int(n2), int(status == 'R')]
