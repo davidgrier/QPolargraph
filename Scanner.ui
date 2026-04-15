@@ -194,13 +194,13 @@
   <customwidget>
    <class>QPolargraphWidget</class>
    <extends>QWidget</extends>
-   <header>QPolargraph</header>
+   <header>QPolargraph.QPolargraphWidget</header>
    <container>1</container>
   </customwidget>
   <customwidget>
    <class>QRasterScanWidget</class>
    <extends>QWidget</extends>
-   <header>QPolargraph</header>
+   <header>QPolargraph.QRasterScanWidget</header>
    <container>1</container>
   </customwidget>
   <customwidget>

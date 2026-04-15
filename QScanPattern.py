@@ -1,3 +1,4 @@
+from QInstrument.lib.QAbstractInstrument import QAbstractInstrument
 from qtpy import QtCore
 import numpy as np
 import logging
@@ -6,34 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class _Property(QtCore.Property):
-
-    def __init__(self, value, name: str = ''):
-        super().__init__(type(value), self.getter, self.setter)
-        self.value = value
-        self.name = name
-
-    def getter(self, inst=None):
-        logger.debug(f'Getting {self.name}')
-        return self.value
-
-    def setter(self, inst=None, value=None):
-        logger.debug(f'Setting {self.name}: {value}')
-        self.value = value
-
-
-class _PropertyMeta(type(QtCore.QObject)):
-    def __new__(mcs, name, bases, attrs):
-        for key in list(attrs.keys()):
-            attr = attrs[key]
-            if not isinstance(attr, _Property):
-                continue
-            value = attr.value
-            attrs[key] = _Property(value, key)
-        return super().__new__(mcs, name, bases, attrs)
-
-
-class QScanPattern(QtCore.QObject, metaclass=_PropertyMeta):
+class QScanPattern(QAbstractInstrument):
 
     '''Base class for polargraph scan-trajectory patterns.
 
@@ -66,12 +40,6 @@ class QScanPattern(QtCore.QObject, metaclass=_PropertyMeta):
         Emitted when a full :meth:`scan` completes.
     '''
 
-    width = _Property(0.6)
-    height = _Property(0.6)
-    dx = _Property(0.)
-    dy = _Property(0.)
-    step = _Property(5.)
-
     dataReady = QtCore.Signal(np.ndarray)
     moveFinished = QtCore.Signal()
     scanFinished = QtCore.Signal()
@@ -84,16 +52,80 @@ class QScanPattern(QtCore.QObject, metaclass=_PropertyMeta):
                  step: float = 5,
                  polargraph=None,
                  **kwargs):
-        super().__init__(*args, **kwargs)
-        self.width = width
-        self.height = height
-        self.dx = dx
-        self.dy = dy
-        self.step = step
+        super().__init__(**kwargs)
+        self._width = width
+        self._height = height
+        self._dx = dx
+        self._dy = dy
+        self._step = step
         self.polargraph = polargraph
         self._moving = False
         self._scanning = False
         self._interrupt = False
+        self._registerProperties()
+        self._registerMethods()
+
+    def _registerProperties(self) -> None:
+        self.registerProperty('width', ptype=float)
+        self.registerProperty('height', ptype=float)
+        self.registerProperty('dx', ptype=float)
+        self.registerProperty('dy', ptype=float)
+        self.registerProperty('step', ptype=float)
+
+    def _registerMethods(self) -> None:
+        self.registerMethod('home', self.home)
+        self.registerMethod('center', self.center)
+        self.registerMethod('scan', self.scan)
+        self.registerMethod('interrupt', self.interrupt)
+
+    @property
+    def width(self) -> float:
+        '''Horizontal extent of the scan area [m].'''
+        return self._width
+
+    @width.setter
+    def width(self, value: float) -> None:
+        self._width = float(value)
+
+    @property
+    def height(self) -> float:
+        '''Vertical extent of the scan area [m].'''
+        return self._height
+
+    @height.setter
+    def height(self, value: float) -> None:
+        self._height = float(value)
+
+    @property
+    def dx(self) -> float:
+        '''Horizontal offset of scan centre from polargraph centreline [m].'''
+        return self._dx
+
+    @dx.setter
+    def dx(self, value: float) -> None:
+        self._dx = float(value)
+
+    @property
+    def dy(self) -> float:
+        '''Vertical offset of scan top edge below home position [m].'''
+        return self._dy
+
+    @dy.setter
+    def dy(self, value: float) -> None:
+        self._dy = float(value)
+
+    @property
+    def step(self) -> float:
+        '''Spacing between scan lines [mm].'''
+        return self._step
+
+    @step.setter
+    def step(self, value: float) -> None:
+        self._step = float(value)
+
+    def isOpen(self) -> bool:
+        '''Return ``True`` — scan patterns are always available.'''
+        return True
 
     def rect(self) -> list:
         '''Return the bounding rectangle ``[x1, y1, x2, y2]`` [m].'''
@@ -124,10 +156,6 @@ class QScanPattern(QtCore.QObject, metaclass=_PropertyMeta):
             suitable for plotting.
         '''
         return self.vertices()
-
-    def isOpen(self) -> bool:
-        '''Return ``True`` — satisfies the :class:`QInstrumentWidget` interface.'''
-        return True
 
     @QtCore.Slot()
     def home(self) -> None:

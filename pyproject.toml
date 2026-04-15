@@ -39,7 +39,7 @@ dev = [
 ]
 
 [project.gui-scripts]
-qpolargraph = "QPolargraph.__main__:main"
+qpolargraph = "QPolargraph.QScanner:QScanner.example"
 
 [project.urls]
 Homepage = "https://github.com/davidgrier/QPolargraph"
