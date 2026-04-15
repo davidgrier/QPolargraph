@@ -1,45 +1,51 @@
-from PyQt5.QtWidgets import (QApplication, QMainWindow)
-from PyQt5 import uic
-from PyQt5.QtCore import (Qt, pyqtSignal, pyqtSlot)
-from QInstrument.lib import Configure
+from qtpy.QtWidgets import QApplication, QMainWindow
+from qtpy import uic, QtCore
+from qtpy.QtCore import Qt
+from QInstrument.lib.Configure import Configure
 import pyqtgraph as pg
 import numpy as np
 import os
 import logging
 
-logging.basicConfig()
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
 
 
 class QScanner(QMainWindow):
-    '''Framework for a Polargraph scanner application
+
+    '''Application framework for a polargraph scanner.
+
+    Loads the ``Scanner.ui`` layout, wires up a
+    :class:`~QPolargraph.QPolargraphWidget.QPolargraphWidget` and a
+    :class:`~QPolargraph.QRasterScanWidget.QRasterScanWidget`, and
+    provides a live :mod:`pyqtgraph` display of the scan trajectory and
+    current belt geometry. Intended to be subclassed for
+    experiment-specific scanner applications.
 
     Properties
     ----------
-    configdir: str
-        directory name for storing instrument configuration data
-        Default: ~/.QScanner
+    configdir : str
+        Directory for storing instrument configuration.
+        Default: ``~/.QScanner``.
 
     Methods
     -------
-    showStatus(message: str):
-        Convenience method to print message on the status bar.
-    plotData(position: listlike, hue: float):
-        Plot point at position (x, y) with hue in [0, 1].
+    showStatus(message)
+        Display *message* on the status bar.
+    plotData(x, y, hue)
+        Add scatter points at ``(x, y)`` coloured by *hue* in ``[0, 1]``.
 
     Signals
     -------
-    data: list
-        Emitted when data is ready.
-        data: [x, y] current position of polargraph [m]
+    data(list)
+        Emitted when data are ready; carries ``[x, y]`` [m].
     '''
 
-    data = pyqtSignal(list)
+    data = QtCore.Signal(list)
 
     uiFile = 'Scanner.ui'
 
-    def __init__(self, *args, configdir=None, **kwargs):
+    def __init__(self, *args, configdir: str | None = None, **kwargs):
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
         super().__init__(*args, **kwargs)
@@ -54,19 +60,19 @@ class QScanner(QMainWindow):
         self._configurePlot()
         self._connectSignals()
 
-    def closeEvent(self, event):
+    def closeEvent(self, event) -> None:
         logger.debug(f'Closing: {event.type()}')
         self.saveSettings()
         self.ui.polargraph.close()
 
-    def _loadUi(self, uiFile):
+    def _loadUi(self, uiFile: str):
         filename = os.path.join(os.path.dirname(__file__), uiFile)
         form, _ = uic.loadUiType(filename)
         ui = form()
         ui.setupUi(self)
         return ui
 
-    def _connectSignals(self):
+    def _connectSignals(self) -> None:
         self.ui.scan.clicked.connect(self.toggleScan)
         self.ui.polargraph.propertyChanged.connect(self.updatePlot)
         self.ui.scanner.propertyChanged.connect(self.updatePlot)
@@ -77,65 +83,74 @@ class QScanner(QMainWindow):
         self.ui.actionSaveSettings.triggered.connect(self.saveSettings)
         self.ui.actionRestoreSettings.triggered.connect(self.restoreSettings)
 
-    def _configurePlot(self):
+    def _configurePlot(self) -> None:
         self.plot = pg.PlotItem()
         self.ui.graphicsView.setCentralItem(self.plot)
         self.plot.invertY(True)
         self.plot.setAspectLocked(ratio=1.)
         self.plot.showGrid(True, True, 0.2)
 
-        pen = pg.mkPen('r', style=Qt.DotLine)
+        pen = pg.mkPen('r', style=Qt.PenStyle.DotLine)
         self.trajectoryPlot = pg.PlotDataItem(pen=pen)
         self.plot.addItem(self.trajectoryPlot)
         self.plotTrajectory()
 
-        pen = pg.mkPen('k', thick=3)
+        pen = pg.mkPen('k', width=3)
         brush = pg.mkBrush('y')
         self.beltPlot = pg.PlotDataItem(pen=pen, symbol='o',
                                         symbolPen=pen, symbolBrush=brush)
         self.plot.addItem(self.beltPlot)
         self.plotBelt()
 
-        pen = pg.mkPen('k', thick=0)
         self.dataPlot = pg.ScatterPlotItem(pen=None)
         self.plot.addItem(self.dataPlot)
 
-    @pyqtSlot(str, object)
-    def updatePlot(self, name, value):
+    @QtCore.Slot(str, object)
+    def updatePlot(self, name: str, value: object) -> None:
         self.plotTrajectory()
         self.plotBelt()
 
-    @pyqtSlot()
-    def plotTrajectory(self):
+    @QtCore.Slot()
+    def plotTrajectory(self) -> None:
         x, y = self.scanner.trajectory()
         self.trajectoryPlot.setData(x, y)
 
-    @pyqtSlot()
-    @pyqtSlot(list)
-    def plotBelt(self, data=None):
+    @QtCore.Slot()
+    @QtCore.Slot(list)
+    def plotBelt(self, data=None) -> None:
         p = self.polargraph
         xp, yp, running = p.position if (data is None) else data
-        x = [-p.ell/2., xp, p.ell/2]
+        x = [-p.ell / 2., xp, p.ell / 2]
         y = [0, yp, 0]
         self.beltPlot.setData(x, y)
         QApplication.processEvents()
 
-    def plotData(self, x, y, hue):
+    def plotData(self, x, y, hue) -> None:
+        '''Add scatter points to the data plot.
+
+        Parameters
+        ----------
+        x : array-like
+            Horizontal coordinates [m].
+        y : array-like
+            Vertical coordinates [m].
+        hue : array-like
+            Colour values in ``[0, 1]`` (HSV hue).
+        '''
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)
-        # brush = pg.mkBrush(color=pg.hsvColor(hue))
         brush = [pg.hsvColor(h) for h in np.atleast_1d(hue)]
         self.dataPlot.addPoints(x, y, brush=brush)
 
-    @pyqtSlot()
-    def toggleScan(self):
+    @QtCore.Slot()
+    def toggleScan(self) -> None:
         if not self.polargraph.running():
             self.scanStarted()
         else:
             self.scanAborted()
 
-    @pyqtSlot()
-    def scanStarted(self):
+    @QtCore.Slot()
+    def scanStarted(self) -> None:
         self.showStatus('Scanning...')
         ui = self.ui
         ui.scan.setText('Stop')
@@ -143,29 +158,29 @@ class QScanner(QMainWindow):
             w.setEnabled(False)
         self.scanner.scan()
 
-    @pyqtSlot()
-    def scanAborted(self):
+    @QtCore.Slot()
+    def scanAborted(self) -> None:
         self.showStatus('Aborting scan')
         self.scanner.interrupt()
         self.ui.scan.setText('Stopping')
         self.ui.scan.setEnabled(False)
 
-    @pyqtSlot()
-    def scanFinished(self):
+    @QtCore.Slot()
+    def scanFinished(self) -> None:
         ui = self.ui
         ui.scan.setText('Scan')
         for w in [ui.scan, ui.center, ui.home, ui.polargraph, ui.scanner]:
             w.setEnabled(True)
         self.showStatus('Scan complete')
 
-    @pyqtSlot()
-    def saveSettings(self):
+    @QtCore.Slot()
+    def saveSettings(self) -> None:
         self.config.save(self.ui.scanner)
         self.config.save(self.ui.polargraph)
         self.showStatus('Configuration saved')
 
-    @pyqtSlot()
-    def restoreSettings(self):
+    @QtCore.Slot()
+    def restoreSettings(self) -> None:
         self.config.restore(self.ui.scanner)
         self.config.restore(self.ui.polargraph)
         self.showStatus('Configuration restored')
@@ -177,7 +192,7 @@ def main():
     app = QApplication(sys.argv)
     widget = QScanner()
     widget.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == '__main__':

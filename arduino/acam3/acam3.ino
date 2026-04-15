@@ -3,14 +3,14 @@
  * Sketch to control stepper motors via serial interface
  *
  * Commands implemented with examples:
- * - Q : Query software version
- * - V:500 : Set motor speed to 500 steps/second
- * - A:100 : Set motor acceleration to 100 steps/second^2
+ * - Q          : Query software version
+ * - V:500:500  : Set motor speeds to 500 steps/second each
+ * - A:100:100  : Set motor accelerations to 100 steps/second^2 each
  * - G:-1000:50 : Move motor 1 to position -1000 and motor 2 to 50
- * - S : Stop
- * - X : Release motors
- * - P : Query position of motors
- * - R : Query whether motors are running
+ * - S          : Stop
+ * - X          : Release motors
+ * - P          : Query position of motors
+ * - R          : Query whether motors are running
  */
 
 #include <stdio.h>
@@ -19,7 +19,7 @@
 #include <AccelStepper.h>
 #include <Adafruit_MotorShield.h>
 
-#define VERSION "acam 3.1.0"
+#define VERSION "acam3.2.0"
 
 Adafruit_MotorShield AFMS(0x60);
 Adafruit_StepperMotor *motor1 = AFMS.getStepper(200, 1);
@@ -27,13 +27,12 @@ Adafruit_StepperMotor *motor2 = AFMS.getStepper(200, 2);
 
 /* String I/O */
 const int bufsize = 32;
-char cmd[bufsize];    // command string
+char cmd[bufsize];
 int len = 0;
 
 /* flags */
-boolean command_ready = false; // command string received
-boolean is_running = false;    // true if steppers are running
-boolean is_running_1, is_running_2;
+bool command_ready = false;
+bool is_running = false;
 
 /* motor positions (steps) */
 long n1 = 0;
@@ -67,10 +66,9 @@ void set_target() {
 }
 
 void getset_speed() {
-  char *token;
-  const char delim = ':';
+  char *t1, *t2;
   float v1, v2;
-  
+
   if (len == 1) {
     v1 = stepper1.maxSpeed();
     v2 = stepper2.maxSpeed();
@@ -78,13 +76,16 @@ void getset_speed() {
     Serial.print(v1);
     Serial.print(':');
     Serial.println(v2);
-  }
-  else {
-    token = strtok(cmd, &delim);
-    token = strtok(NULL, &delim);
-    v1 = atof(token);
-    token = strtok(NULL, &delim);
-    v2 = atof(token);
+  } else {
+    strtok(cmd, ":");
+    t1 = strtok(NULL, ":");
+    t2 = strtok(NULL, ":");
+    if (t1 == NULL || t2 == NULL) {
+      Serial.println("E:V");
+      return;
+    }
+    v1 = atof(t1);
+    v2 = atof(t2);
     stepper1.setMaxSpeed(v1);
     stepper2.setMaxSpeed(v2);
     Serial.println('V');
@@ -92,15 +93,18 @@ void getset_speed() {
 }
 
 void set_acceleration() {
-  char *token;
-  const char delim = ':';
+  char *t1, *t2;
   float a1, a2;
-  
-  token = strtok(cmd, &delim);
-  token = strtok(NULL, &delim);
-  a1 = atof(token);
-  token = strtok(NULL, &delim);
-  a2 = atof(token);
+
+  strtok(cmd, ":");
+  t1 = strtok(NULL, ":");
+  t2 = strtok(NULL, ":");
+  if (t1 == NULL || t2 == NULL) {
+    Serial.println("E:A");
+    return;
+  }
+  a1 = atof(t1);
+  a2 = atof(t2);
   stepper1.setAcceleration(a1);
   stepper2.setAcceleration(a2);
   Serial.println('A');
@@ -118,20 +122,15 @@ void release_motors() {
   Serial.println('X');
 }
 
-void query_identity() {
-  Serial.println("acam3");
-}
-
 void getset_position() {
   if (len == 1) {
     n1 = stepper1.currentPosition();
     n2 = stepper2.currentPosition();
-    Serial.print((is_running) ? "R:" : "P:");
+    Serial.print(is_running ? "R:" : "P:");
     Serial.print(n1);
     Serial.print(':');
     Serial.println(n2);
-  }
-  else {
+  } else {
     sscanf(cmd, "P:%ld:%ld", &n1, &n2);
     stepper1.setCurrentPosition(n1);
     stepper2.setCurrentPosition(n2);
@@ -180,34 +179,34 @@ void parse_command() {
 }
 
 void setup() {
-    Serial.begin(9600, SERIAL_8N1); // Serial Port at 9600 baud
-    while (!Serial) {
-      ;                     // Wait for serial port to connect
-    }
-    Serial.setTimeout(100);
-    
-    AFMS.begin();           // AccelStepper setup
-    stepper1.setMaxSpeed(1000.0);
-    stepper2.setMaxSpeed(1000.0);
-    stepper1.setCurrentPosition(0);	
-    stepper2.setCurrentPosition(0);
-    stepper1.setAcceleration(1000.);
-    stepper2.setAcceleration(1000.);
+  Serial.begin(9600, SERIAL_8N1);
+  while (!Serial) {
+    ;                           // wait for serial port to connect
+  }
+  Serial.setTimeout(100);
+
+  AFMS.begin();
+  stepper1.setMaxSpeed(1000.0);
+  stepper2.setMaxSpeed(1000.0);
+  stepper1.setCurrentPosition(0);
+  stepper2.setCurrentPosition(0);
+  stepper1.setAcceleration(1000.0);
+  stepper2.setAcceleration(1000.0);
 }
 
 void loop() {
-    if (command_ready) {
-      parse_command();
-    }
-    is_running_1 = stepper1.run();
-    is_running_2 = stepper2.run();
-    is_running = is_running_1 or is_running_2;
+  if (command_ready) {
+    parse_command();
+  }
+  bool r1 = stepper1.run();
+  bool r2 = stepper2.run();
+  is_running = r1 || r2;
 }
 
 void serialEvent() {
   char c;
 
-  if ((Serial.available() > 0) or (command_ready == false)) {
+  if (Serial.available() > 0 && !command_ready) {
     c = Serial.read();
     if (c == '\n') {
       cmd[len] = '\0';

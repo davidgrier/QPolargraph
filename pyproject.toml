@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "QPolargraph"
+version = "1.0.0"
+description = "Qt-based interface for a two-dimensional polargraph scanner"
+readme = "README.md"
+license = { file = "LICENSE.md" }
+authors = [
+    { name = "David G. Grier", email = "david.grier@nyu.edu" },
+]
+keywords = ["polargraph", "scanner", "stepper motor", "Arduino", "Qt", "scientific instrument"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.20",
+    "qtpy>=2.0",
+    "pyqtgraph>=0.13",
+    "parse>=1.19",
+    "QInstrument>=2.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-qt>=4.0",
+]
+
+[project.gui-scripts]
+qpolargraph = "QPolargraph.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/davidgrier/QPolargraph"
+Repository = "https://github.com/davidgrier/QPolargraph"
+"Issue Tracker" = "https://github.com/davidgrier/QPolargraph/issues"
+
+# The project root IS the QPolargraph package — no src/ subdirectory.
+[tool.setuptools]
+package-dir = {"QPolargraph" = "."}
+packages = [
+    "QPolargraph",
+]
+
+[tool.setuptools.package-data]
+"QPolargraph" = ["**/*.ui", "**/*.png", "**/*.ino"]
+
+[tool.setuptools.exclude-package-data]
+"QPolargraph" = [".qp/**", "tests/**", "docs/**"]

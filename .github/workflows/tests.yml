@@ -1,0 +1,50 @@
+name: Tests
+
+on:
+  push:
+    branches: [main, devel]
+  pull_request:
+    branches: [main]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  test:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libegl1 \
+            libgl1 \
+            libglib2.0-0 \
+            libdbus-1-3 \
+            libxkbcommon0 \
+            libfontconfig1 \
+            libfreetype6
+
+      - name: Install Python dependencies
+        run: pip install PyQt6 qtpy numpy pytest pytest-qt pyqtgraph parse
+
+      - name: Install QInstrument
+        run: pip install git+https://github.com/davidgrier/QInstrument.git
+
+      - name: Install QPolargraph
+        run: pip install -e .
+
+      - name: Run tests
+        run: pytest tests/
+        env:
+          QT_QPA_PLATFORM: offscreen

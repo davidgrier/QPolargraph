@@ -1,10 +1,30 @@
-from .Motors import Motors
-from .Polargraph import Polargraph
-from .QPolargraphWidget import QPolargraphWidget
-from .QRasterScanWidget import QRasterScanWidget
-from .QScanner import QScanner
+import importlib
+from importlib.metadata import version, PackageNotFoundError
+
+try:
+    __version__ = version('QPolargraph')
+except PackageNotFoundError:
+    __version__ = None
+
+_lazy = {
+    'Motors':             'Motors',
+    'Polargraph':         'Polargraph',
+    'FakeMotors':         'fake',
+    'FakePolargraph':     'fake',
+    'QPolargraphWidget':  'QPolargraphWidget',
+    'QRasterScanWidget':  'QRasterScanWidget',
+    'QScanner':           'QScanner',
+    'QScanPattern':       'QScanPattern',
+    'RasterScan':         'RasterScan',
+    'PolarScan':          'PolarScan',
+}
 
 
-__all__ = ['Motors', 'Polargraph',
-           'QPolargraphWidget', 'QRasterScanWidget',
-           'QScanner']
+def __getattr__(name):
+    if name in _lazy:
+        mod = importlib.import_module(f'.{_lazy[name]}', package=__name__)
+        return getattr(mod, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+__all__ = list(_lazy)

@@ -1,122 +1,147 @@
-from QInstrument.lib import QSerialInstrument
-from PyQt5.QtCore import pyqtProperty
+from QInstrument.lib.QSerialInstrument import QSerialInstrument
+from qtpy import QtCore
 import numpy as np
 from parse import parse
+from pathlib import Path
 from time import sleep
 import logging
+import re
 
-logging.basicConfig()
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
 
 
-__version__ = '3.1.0'
+def _firmware_version() -> str:
+    ino = Path(__file__).parent / 'arduino' / 'acam3' / 'acam3.ino'
+    pattern = re.compile(r'#define\s+VERSION\s+"acam(\S+)"')
+    with ino.open() as f:
+        for line in f:
+            if m := pattern.match(line.strip()):
+                return m.group(1)
+    raise RuntimeError('VERSION not found in acam3.ino')
 
 
 class Motors(QSerialInstrument):
 
-    '''
-    PyQt5-compatible abstraction of a pair of stepper moters
-    controlled by an Arduino
+    '''Abstraction of a pair of stepper motors controlled by an Arduino.
 
-    ...
-
-    Inherits
-    --------
-    QInstrument.QSerialInstrument
+    Communicates with an Arduino running the acam3 firmware over USB
+    serial. The Arduino drives two stepper motors via an Adafruit Motor
+    Shield.
 
     Properties
     ----------
-    indexes : numpy.ndarray(int, int, int)
-        (n1, n2): Step indexes of two stepper motors.
-        status: 1 if motors are running, 0 otherwise.
-        Setting (n1, n2) defines the step counts to be (n1, n2).
-    motor_speed : numpy.ndarray(float, float)
-        (v1, v2) Maximum stepper motor speed in steps/second.
-    acceleration : numpy.ndarray(float, float)
-        (a1, a2) Acceleration in steps/second^2.
+    indexes : numpy.ndarray
+        ``(n1, n2, status)`` — step indexes of the two stepper motors
+        and a running flag (1 while moving, 0 when stopped).
+        Setting ``(n1, n2)`` redefines the step-count origin.
+    motor_speed : numpy.ndarray
+        ``(v1, v2)`` — maximum stepper motor speed [steps/s].
+    acceleration : numpy.ndarray
+        ``(a1, a2)`` — acceleration [steps/s²].
 
     Methods
     -------
     goto(n1, n2)
-        Set target step counts for stepper motors.  This causes the
-        motors to move to the new values.
+        Move to target step counts ``(n1, n2)``.
     home()
-        Equivalent to goto(0, 0)
+        Equivalent to ``goto(0, 0)``.
+    stop()
+        Halt motion immediately.
     release()
-        Stop motors and turn off current to windings.
-    running() : bool
-        Returns True if motors are running.
+        Stop motors and de-energise the windings.
+    running()
+        Return ``True`` if the motors are currently moving.
     '''
 
-    settings = dict(baudRate=QSerialInstrument.Baud9600,
-                    dataBits=QSerialInstrument.Data8,
-                    stopBits=QSerialInstrument.OneStop,
-                    parity=QSerialInstrument.NoParity,
-                    flowControl=QSerialInstrument.NoFlowControl,
-                    eol='\n')
+    FIRMWARE_VERSION = _firmware_version()
 
-    def __init__(self, portName=None, **kwargs):
-        super().__init__(portName, **self.settings, **kwargs)
+    comm = dict(baudRate=QSerialInstrument.BaudRate.Baud9600,
+                dataBits=QSerialInstrument.DataBits.Data8,
+                stopBits=QSerialInstrument.StopBits.OneStop,
+                parity=QSerialInstrument.Parity.NoParity,
+                flowControl=QSerialInstrument.FlowControl.NoFlowControl,
+                eol='\n')
 
-    def identify(self):
-        logger.info(f' Trying {self.portName()}...')
+    def __init__(self, portName: str | None = None, **kwargs):
+        super().__init__(portName, **(self.comm | kwargs))
+        self._acceleration = np.zeros(2)
+
+    def _registerProperties(self) -> None:
+        super()._registerProperties()
+
+    def _registerMethods(self) -> None:
+        super()._registerMethods()
+        self.registerMethod('home', self.home)
+        self.registerMethod('stop', self.stop)
+        self.registerMethod('release', self.release)
+
+    def identify(self) -> bool:
+        '''Return ``True`` if the port responds with the expected acam3 version string.
+
+        Waits 2 s after opening for the Arduino to reset, then sends
+        ``Q`` and checks that the response is ``acam{FIRMWARE_VERSION}``.
+        '''
+        logger.info(f' Trying {self._interface.portName()}...')
         sleep(2)
         res = self.handshake('Q')
         logger.debug(f' Received: {res}')
         if 'acam' not in res:
             return False
-        version = parse('acam{:>}', res)[0]
-        if version != __version__:
-            logger.error(f' Arduino is running acam3 version {version}')
-            logger.error(f' Install version {__version__}')
+        result = parse('acam{:>}', res)
+        if result is None:
             return False
-        logger.info(f' Arduino running acam {version}')
+        fw_version = result[0]
+        if fw_version != self.FIRMWARE_VERSION:
+            logger.error(f' Arduino is running acam3 version {fw_version}')
+            logger.error(f' Install version {self.FIRMWARE_VERSION}')
+            return False
+        logger.info(f' Arduino running acam {fw_version}')
         return True
 
-    def process(self, data):
+    def process(self, data: str) -> None:
         logger.debug(f' received: {data}')
 
-    def goto(self, n1, n2):
-        '''Move to index (n1, n2)
+    def goto(self, n1: int, n2: int) -> None:
+        '''Move to target step counts.
 
         Parameters
         ----------
         n1 : int
-            Index of motor 1
+            Target step index for motor 1.
         n2 : int
-            Index of motor 2
+            Target step index for motor 2.
         '''
         logger.debug(f' goto {n1} {n2}')
         ok = self.expect(f'G:{n1}:{n2}', 'G')
         if not ok:
             logger.error(f'Could not set target indexes: ({n1},{n2})')
 
-    def home(self):
-        '''Move to home position'''
+    def home(self) -> None:
+        '''Move to home position (step index 0, 0).'''
         self.goto(0, 0)
 
-    def stop(self):
-        '''Stop motion'''
+    def stop(self) -> None:
+        '''Halt motor motion immediately.'''
         ok = self.expect('S', 'S')
         if not ok:
             logger.error('Error stopping motion')
 
-    def release(self):
-        '''De-energize motor coils'''
+    def release(self) -> None:
+        '''De-energise motor coils.'''
         ok = self.expect('X', 'X')
         if not ok:
             logger.error('Error releasing stepper motors!')
 
-    def running(self):
-        '''Returns True if motors are running'''
+    def running(self) -> bool:
+        '''Return ``True`` if the motors are currently moving.'''
         res = self.handshake('R')
         status = res.split(':')[1] if ('R:' in res) else '0'
         return status == '1'
 
-    @pyqtProperty(np.ndarray)
-    def indexes(self):
-        '''Current step numbers for motors'''
+    @property
+    def indexes(self) -> np.ndarray:
+        '''Current step counts ``(n1, n2, status)`` for both motors.'''
         try:
             status, n1, n2 = self.handshake('P').split(':')
             indexes = [int(n1), int(n2), int(status == 'R')]
@@ -127,35 +152,35 @@ class Motors(QSerialInstrument):
         return np.array(indexes)
 
     @indexes.setter
-    def indexes(self, n):
+    def indexes(self, n) -> None:
         n1, n2 = n
         self.expect(f'P:{n1}:{n2}', 'P')
 
-    @pyqtProperty(np.ndarray)
-    def motor_speed(self):
-        '''Maximum motor speed [steps/s]'''
+    @property
+    def motor_speed(self) -> np.ndarray:
+        '''Maximum motor speed ``(v1, v2)`` [steps/s].'''
         try:
             res = self.handshake('V')
-            _, v1, v2 = res.split(':') if 'V:' in res else 0, 0, 0
+            _, v1, v2 = res.split(':') if 'V:' in res else (0, 0, 0)
         except Exception as ex:
             logger.warning(f'Could not read maximum speed: {ex}')
-            v1, v2, = 0., 0.
+            v1, v2 = 0., 0.
         return np.array([float(v1), float(v2)])
 
     @motor_speed.setter
-    def motor_speed(self, v):
+    def motor_speed(self, v) -> None:
         v1, v2 = v
         ok = self.expect(f'V:{v1}:{v2}', 'V')
         if not ok:
             logger.warning(f'Could not set maximum speed: ({v1},{v2})')
 
-    @pyqtProperty(np.ndarray)
-    def acceleration(self):
-        '''Acceleration [steps/s^2]'''
+    @property
+    def acceleration(self) -> np.ndarray:
+        '''Motor acceleration ``(a1, a2)`` [steps/s²].'''
         return self._acceleration
 
     @acceleration.setter
-    def acceleration(self, a):
+    def acceleration(self, a) -> None:
         a1, a2 = a
         self._acceleration = np.array([a1, a2])
         res = self.handshake(f'A:{a1}:{a2}')
@@ -163,17 +188,21 @@ class Motors(QSerialInstrument):
 
 
 def main():
-    from PyQt5.QtCore import QCoreApplication
+    from qtpy.QtCore import QCoreApplication
     import sys
 
     print('Motor subsystem test')
     app = QCoreApplication(sys.argv)
     motors = Motors().find()
+    if not motors.isOpen():
+        print('No Motors found. Using FakeMotors.')
+        from QPolargraph.fake import FakeMotors
+        motors = FakeMotors()
     print(f'Current position: {motors.indexes}')
     motors.goto(100, 50)
     if motors.running():
         print('Running...')
-    while (motors.running()):
+    while motors.running():
         pass
     print(f'Final position: {motors.indexes}')
     motors.close()
