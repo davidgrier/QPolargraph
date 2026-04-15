@@ -1,10 +1,11 @@
+from pathlib import Path
 from qtpy.QtWidgets import QApplication, QMainWindow
 from qtpy import uic, QtCore
 from qtpy.QtCore import Qt
 from QInstrument.lib.Configure import Configure
 import pyqtgraph as pg
 import numpy as np
-import os
+import inspect
 import logging
 
 
@@ -21,6 +22,13 @@ class QScanner(QMainWindow):
     provides a live :mod:`pyqtgraph` display of the scan trajectory and
     current belt geometry. Intended to be subclassed for
     experiment-specific scanner applications.
+
+    Class Attributes
+    ----------------
+    UIFILE : str
+        Filename of the Qt Designer ``.ui`` file.  Subclasses may
+        override this to provide a different layout while inheriting
+        all scanner behaviour.
 
     Properties
     ----------
@@ -43,17 +51,15 @@ class QScanner(QMainWindow):
 
     data = QtCore.Signal(list)
 
-    uiFile = 'Scanner.ui'
+    UIFILE = 'Scanner.ui'
 
     def __init__(self, *args, configdir: str | None = None, **kwargs):
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
         super().__init__(*args, **kwargs)
-        self.ui = self._loadUi(self.uiFile)
+        uic.loadUi(self._uiPath(), self)
         self.showStatus = self.statusBar().showMessage
-        self.polargraph = self.ui.polargraph.device
-        self.scanner = self.ui.scanner.device
-        self.scanner.polargraph = self.polargraph
+        self.scanner.device.polargraph = self.polargraph.device
         configdir = configdir or '~/.QScanner'
         self.config = Configure(configdir=configdir)
         self.restoreSettings()
@@ -63,29 +69,35 @@ class QScanner(QMainWindow):
     def closeEvent(self, event) -> None:
         logger.debug(f'Closing: {event.type()}')
         self.saveSettings()
-        self.ui.polargraph.close()
+        self.polargraph.device.close()
 
-    def _loadUi(self, uiFile: str):
-        filename = os.path.join(os.path.dirname(__file__), uiFile)
-        form, _ = uic.loadUiType(filename)
-        ui = form()
-        ui.setupUi(self)
-        return ui
+    @classmethod
+    def _uiPath(cls) -> Path:
+        '''Return the absolute path to this class's UI file.
+
+        Resolves :attr:`UIFILE` relative to the directory of the class
+        in the MRO that defines it, so subclasses that override
+        :attr:`UIFILE` resolve correctly regardless of working directory.
+        '''
+        for klass in cls.__mro__:
+            if 'UIFILE' in klass.__dict__:
+                return Path(inspect.getfile(klass)).parent / klass.UIFILE
+        raise AttributeError(f'{cls.__name__} has no UIFILE defined')
 
     def _connectSignals(self) -> None:
-        self.ui.scan.clicked.connect(self.toggleScan)
-        self.ui.polargraph.propertyChanged.connect(self.updatePlot)
-        self.ui.scanner.propertyChanged.connect(self.updatePlot)
-        self.scanner.dataReady.connect(self.plotBelt)
-        self.scanner.scanFinished.connect(self.scanFinished)
-        self.ui.home.clicked.connect(self.scanner.home)
-        self.ui.center.clicked.connect(self.scanner.center)
-        self.ui.actionSaveSettings.triggered.connect(self.saveSettings)
-        self.ui.actionRestoreSettings.triggered.connect(self.restoreSettings)
+        self.scan.clicked.connect(self.toggleScan)
+        self.polargraph.propertyChanged.connect(self.updatePlot)
+        self.scanner.propertyChanged.connect(self.updatePlot)
+        self.scanner.device.dataReady.connect(self.plotBelt)
+        self.scanner.device.scanFinished.connect(self.scanFinished)
+        self.home.clicked.connect(self.scanner.device.home)
+        self.center.clicked.connect(self.scanner.device.center)
+        self.actionSaveSettings.triggered.connect(self.saveSettings)
+        self.actionRestoreSettings.triggered.connect(self.restoreSettings)
 
     def _configurePlot(self) -> None:
         self.plot = pg.PlotItem()
-        self.ui.graphicsView.setCentralItem(self.plot)
+        self.graphicsView.setCentralItem(self.plot)
         self.plot.invertY(True)
         self.plot.setAspectLocked(ratio=1.)
         self.plot.showGrid(True, True, 0.2)
@@ -112,13 +124,13 @@ class QScanner(QMainWindow):
 
     @QtCore.Slot()
     def plotTrajectory(self) -> None:
-        x, y = self.scanner.trajectory()
+        x, y = self.scanner.device.trajectory()
         self.trajectoryPlot.setData(x, y)
 
     @QtCore.Slot()
     @QtCore.Slot(list)
     def plotBelt(self, data=None) -> None:
-        p = self.polargraph
+        p = self.polargraph.device
         xp, yp, running = p.position if (data is None) else data
         x = [-p.ell / 2., xp, p.ell / 2]
         y = [0, yp, 0]
@@ -144,7 +156,7 @@ class QScanner(QMainWindow):
 
     @QtCore.Slot()
     def toggleScan(self) -> None:
-        if not self.polargraph.running():
+        if not self.polargraph.device.running():
             self.scanStarted()
         else:
             self.scanAborted()
@@ -152,48 +164,57 @@ class QScanner(QMainWindow):
     @QtCore.Slot()
     def scanStarted(self) -> None:
         self.showStatus('Scanning...')
-        ui = self.ui
-        ui.scan.setText('Stop')
-        for w in [ui.center, ui.home, ui.polargraph, ui.scanner]:
+        self.scan.setText('Stop')
+        for w in [self.center, self.home, self.polargraph, self.scanner]:
             w.setEnabled(False)
-        self.scanner.scan()
+        self.scanner.device.scan()
 
     @QtCore.Slot()
     def scanAborted(self) -> None:
         self.showStatus('Aborting scan')
-        self.scanner.interrupt()
-        self.ui.scan.setText('Stopping')
-        self.ui.scan.setEnabled(False)
+        self.scanner.device.interrupt()
+        self.scan.setText('Stopping')
+        self.scan.setEnabled(False)
 
     @QtCore.Slot()
     def scanFinished(self) -> None:
-        ui = self.ui
-        ui.scan.setText('Scan')
-        for w in [ui.scan, ui.center, ui.home, ui.polargraph, ui.scanner]:
+        self.scan.setText('Scan')
+        for w in [self.scan, self.center, self.home, self.polargraph, self.scanner]:
             w.setEnabled(True)
         self.showStatus('Scan complete')
 
     @QtCore.Slot()
     def saveSettings(self) -> None:
-        self.config.save(self.ui.scanner)
-        self.config.save(self.ui.polargraph)
+        self.config.save(self.scanner)
+        self.config.save(self.polargraph)
         self.showStatus('Configuration saved')
 
     @QtCore.Slot()
     def restoreSettings(self) -> None:
-        self.config.restore(self.ui.scanner)
-        self.config.restore(self.ui.polargraph)
+        self.config.restore(self.scanner)
+        self.config.restore(self.polargraph)
         self.showStatus('Configuration restored')
 
+    @classmethod
+    def example(cls) -> None:
+        '''Launch the scanner application.
 
-def main():
-    import sys
+        Creates a ``QApplication``, instantiates the scanner, shows it,
+        and runs the event loop.  Intended to be called from
+        ``__main__`` in subclass modules:
 
-    app = QApplication(sys.argv)
-    widget = QScanner()
-    widget.show()
-    sys.exit(app.exec())
+        .. code-block:: python
+
+            if __name__ == '__main__':
+                QMyScanner.example()
+        '''
+        import sys
+
+        app = QApplication.instance() or QApplication(sys.argv)
+        widget = cls()
+        widget.show()
+        sys.exit(app.exec())
 
 
 if __name__ == '__main__':
-    main()
+    QScanner.example()
