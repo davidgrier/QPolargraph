@@ -28,7 +28,7 @@ class QScanner(QMainWindow):
     UIFILE : str
         Filename of the Qt Designer ``.ui`` file.  Subclasses may
         override this to provide a different layout while inheriting
-        all scanner behaviour.
+        all scanner behavior.
 
     Properties
     ----------
@@ -41,7 +41,7 @@ class QScanner(QMainWindow):
     showStatus(message)
         Display *message* on the status bar.
     plotData(x, y, hue)
-        Add scatter points at ``(x, y)`` coloured by *hue* in ``[0, 1]``.
+        Add scatter points at ``(x, y)`` colored by *hue* in ``[0, 1]``.
 
     Signals
     -------
@@ -150,7 +150,7 @@ class QScanner(QMainWindow):
         y : array-like
             Vertical coordinates [m].
         hue : array-like
-            Colour values in ``[0, 1]`` (HSV hue).
+            Color values in ``[0, 1]`` (HSV hue).
         '''
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)

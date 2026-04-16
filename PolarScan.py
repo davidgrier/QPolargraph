@@ -4,10 +4,10 @@ import numpy as np
 
 class PolarScan(QScanPattern):
 
-    '''Arc-by-arc polar scan pattern centred on the left motor pulley.
+    '''Arc-by-arc polar scan pattern centered on the left motor pulley.
 
     Overrides :meth:`QScanPattern.vertices` to sweep arcs of increasing
-    radius across the scan rectangle.  Each arc is centred on the left
+    radius across the scan rectangle.  Each arc is centered on the left
     motor pulley position at ``(-ell/2, 0)``.
     '''
 

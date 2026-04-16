@@ -21,8 +21,8 @@ class QScanPattern(QtCore.QObject):
     height : float
         Vertical extent of the scan area [m]. Default: 0.6.
     dx : float
-        Horizontal offset of the scan area centre from the polargraph
-        centreline [m]. Default: 0.
+        Horizontal offset of the scan area center from the polargraph
+        centerline [m]. Default: 0.
     dy : float
         Vertical offset of the scan area top edge below the home
         position [m]. Default: 0.1.
@@ -82,7 +82,7 @@ class QScanPattern(QtCore.QObject):
 
     @property
     def dx(self) -> float:
-        '''Horizontal offset of scan centre from polargraph centreline [m].'''
+        '''Horizontal offset of scan center from polargraph centerline [m].'''
         return self._dx
 
     @dx.setter
@@ -148,7 +148,7 @@ class QScanPattern(QtCore.QObject):
 
     @QtCore.Slot()
     def center(self) -> None:
-        '''Move payload to the centre of the scan area.'''
+        '''Move payload to the center of the scan area.'''
         y = self.polargraph.y0 + self.dy + self.height / 2.
         self.moveTo([[self.dx, y]])
 
