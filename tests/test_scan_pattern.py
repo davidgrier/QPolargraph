@@ -58,7 +58,7 @@ def test_base_vertices_closes_rectangle(scan):
 def test_base_trajectory_shape(scan):
     t = scan.trajectory()
     assert t.ndim == 2
-    assert t.shape[1] == 2
+    assert t.shape[0] == 2
 
 
 # --- RasterScan ---

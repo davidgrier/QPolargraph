@@ -1,4 +1,3 @@
-from QInstrument.lib.QAbstractInstrument import QAbstractInstrument
 from qtpy import QtCore
 import numpy as np
 import logging
@@ -7,7 +6,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class QScanPattern(QAbstractInstrument):
+class QScanPattern(QtCore.QObject):
 
     '''Base class for polargraph scan-trajectory patterns.
 
@@ -62,21 +61,6 @@ class QScanPattern(QAbstractInstrument):
         self._moving = False
         self._scanning = False
         self._interrupt = False
-        self._registerProperties()
-        self._registerMethods()
-
-    def _registerProperties(self) -> None:
-        self.registerProperty('width', ptype=float)
-        self.registerProperty('height', ptype=float)
-        self.registerProperty('dx', ptype=float)
-        self.registerProperty('dy', ptype=float)
-        self.registerProperty('step', ptype=float)
-
-    def _registerMethods(self) -> None:
-        self.registerMethod('home', self.home)
-        self.registerMethod('center', self.center)
-        self.registerMethod('scan', self.scan)
-        self.registerMethod('interrupt', self.interrupt)
 
     @property
     def width(self) -> float:
@@ -155,7 +139,7 @@ class QScanPattern(QAbstractInstrument):
             ``(2, npts)`` array of ``(x, y)`` coordinates [m],
             suitable for plotting.
         '''
-        return self.vertices()
+        return self.vertices().T
 
     @QtCore.Slot()
     def home(self) -> None:

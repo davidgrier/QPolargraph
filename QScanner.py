@@ -87,7 +87,7 @@ class QScanner(QMainWindow):
     def _connectSignals(self) -> None:
         self.scan.clicked.connect(self.toggleScan)
         self.polargraph.propertyChanged.connect(self.updatePlot)
-        self.scanner.propertyChanged.connect(self.updatePlot)
+        self.scanner.patternChanged.connect(self.updatePlot)
         self.scanner.device.dataReady.connect(self.plotBelt)
         self.scanner.device.scanFinished.connect(self.scanFinished)
         self.home.clicked.connect(self.scanner.device.home)
@@ -117,8 +117,8 @@ class QScanner(QMainWindow):
         self.dataPlot = pg.ScatterPlotItem(pen=None)
         self.plot.addItem(self.dataPlot)
 
-    @QtCore.Slot(str, object)
-    def updatePlot(self, name: str, value: object) -> None:
+    @QtCore.Slot()
+    def updatePlot(self) -> None:
         self.plotTrajectory()
         self.plotBelt()
 
@@ -128,10 +128,13 @@ class QScanner(QMainWindow):
         self.trajectoryPlot.setData(x, y)
 
     @QtCore.Slot()
-    @QtCore.Slot(list)
+    @QtCore.Slot(object)
     def plotBelt(self, data=None) -> None:
         p = self.polargraph.device
-        xp, yp, running = p.position if (data is None) else data
+        if data is not None:
+            xp, yp = data[0], data[1]
+        else:
+            xp, yp, _ = p.position
         x = [-p.ell / 2., xp, p.ell / 2]
         y = [0, yp, 0]
         self.beltPlot.setData(x, y)
