@@ -76,11 +76,17 @@ class QScanner(QMainWindow):
 
     UIFILE = 'Scanner.ui'
     SCAN_PATTERN = PolarScan
+    _UIPATH = Path(__file__).parent / UIFILE
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if 'UIFILE' in cls.__dict__:
+            cls._UIPATH = Path(inspect.getfile(cls)).parent / cls.UIFILE
 
     def __init__(self, *args, configdir: str | None = None, **kwargs):
         self._configurePyqtgraph()
         super().__init__(*args, **kwargs)
-        uic.loadUi(self._uiPath(), self)
+        uic.loadUi(self._UIPATH, self)
         self._scanThread = None
         self.scanner.pattern = self.SCAN_PATTERN()
         self.scanner.pattern.polargraph = self.polargraph.device
@@ -107,19 +113,6 @@ class QScanner(QMainWindow):
     def showStatus(self, message: str) -> None:
         '''Display a message on the status bar.'''
         self.statusBar().showMessage(message)
-
-    @classmethod
-    def _uiPath(cls) -> Path:
-        '''Return the absolute path to this class's UI file.
-
-        Resolves :attr:`UIFILE` relative to the directory of the class
-        in the MRO that defines it, so subclasses that override
-        :attr:`UIFILE` resolve correctly regardless of working directory.
-        '''
-        for klass in cls.__mro__:
-            if 'UIFILE' in klass.__dict__:
-                return Path(inspect.getfile(klass)).parent / klass.UIFILE
-        raise AttributeError(f'{cls.__name__} has no UIFILE defined')
 
     def _connectSignals(self) -> None:
         self.scan.clicked.connect(self.toggleScan)

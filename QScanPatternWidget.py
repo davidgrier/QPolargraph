@@ -25,20 +25,19 @@ class QScanPatternWidget(QtWidgets.QWidget):
     patternChanged = QtCore.Signal()
 
     UIFILE = 'RasterScanWidget.ui'
+    _UIPATH = Path(__file__).parent / UIFILE
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        if 'UIFILE' in cls.__dict__:
+            cls._UIPATH = Path(inspect.getfile(cls)).parent / cls.UIFILE
 
     def __init__(self, *args, pattern=None, **kwargs):
         super().__init__(*args, **kwargs)
         self._pattern = None
-        uic.loadUi(self._uiPath(), self)
+        uic.loadUi(self._UIPATH, self)
         self._connectSignals()
         self.pattern = pattern or PolarScan()
-
-    @classmethod
-    def _uiPath(cls) -> Path:
-        for klass in cls.__mro__:
-            if 'UIFILE' in klass.__dict__:
-                return Path(inspect.getfile(klass)).parent / klass.UIFILE
-        raise AttributeError(f'{cls.__name__} has no UIFILE defined')
 
     @property
     def pattern(self):
