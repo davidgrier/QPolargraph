@@ -15,6 +15,11 @@ class QPolargraphWidget(QInstrumentWidget):
     UIFILE = 'PolargraphWidget.ui'
     INSTRUMENT = Polargraph
 
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        if not self.device.isOpen():
+            self.device = self._fakeCls()()
+
 
 if __name__ == '__main__':
     QPolargraphWidget.example()

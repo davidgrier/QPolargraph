@@ -5,7 +5,7 @@ from QPolargraph.fake import FakePolargraph
 
 @pytest.fixture
 def pg():
-    return FakePolargraph()
+    return FakePolargraph(step_delay=0.)
 
 
 # --- defaults ---
@@ -102,3 +102,52 @@ def test_moveto_updates_motor_speed(pg):
     pg.moveTo(0.1, 0.3)
     v = pg.motor_speed
     assert all(v > 0)
+
+
+# --- motion simulation ---
+
+def _consume(pg):
+    '''Consume the full trajectory, returning all positions.'''
+    positions = []
+    while True:
+        pos = pg.position
+        positions.append(pos)
+        if not pos[2]:
+            break
+    return positions
+
+
+def test_moveto_generates_intermediate_positions(pg):
+    pg.moveTo(0.2, 0.4)
+    positions = _consume(pg)
+    assert len(positions) > 1
+
+
+def test_moveto_final_position_correct(pg):
+    pg.moveTo(0.2, 0.4)
+    positions = _consume(pg)
+    x, y, running = positions[-1]
+    assert running == 0.0
+    assert x == pytest.approx(0.2, abs=1e-9)
+    assert y == pytest.approx(0.4, abs=1e-9)
+
+
+def test_moveto_running_flag_while_in_motion(pg):
+    pg.moveTo(0.2, 0.4)
+    pos = pg.position
+    assert pos[2] == 1.0
+
+
+def test_stop_halts_motion(pg):
+    pg.moveTo(0.2, 0.4)
+    _ = pg.position   # consume one step (ensure motion started)
+    pg.stop()
+    pos = pg.position
+    assert pos[2] == 0.0
+
+
+def test_moveto_zero_distance_arrives_immediately(pg):
+    x0, y0, _ = pg.position
+    pg.moveTo(x0, y0)
+    pos = pg.position
+    assert pos[2] == 0.0

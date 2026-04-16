@@ -8,7 +8,7 @@ from QPolargraph.PolarScan import PolarScan
 
 @pytest.fixture
 def pg():
-    return FakePolargraph()
+    return FakePolargraph(step_delay=0.)
 
 
 @pytest.fixture

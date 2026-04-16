@@ -1,7 +1,12 @@
+# TODO
+# is there a way to upload the arduino sketch?
+# document arduino and adafruit dependencies
+# cite relevant papers on polargraph scanning
+# add a "scan pattern" widget that allows the user to select and configure different scan patterns, and then have the scanner use the selected pattern for scanning.  This would allow users to easily switch between different scanning strategies without needing to subclass QScanner.
+# implement Tarzan scan.
+# UI improvements
 from pathlib import Path
-from qtpy.QtWidgets import QApplication, QMainWindow
-from qtpy import uic, QtCore
-from qtpy.QtCore import Qt
+from qtpy import uic, QtCore, QtWidgets
 from QInstrument.lib.Configure import Configure
 from QPolargraph.PolarScan import PolarScan
 import pyqtgraph as pg
@@ -24,7 +29,7 @@ class _ScanThread(QtCore.QThread):
         self._pattern.scan()
 
 
-class QScanner(QMainWindow):
+class QScanner(QtWidgets.QMainWindow):
 
     '''Application framework for a polargraph scanner.
 
@@ -68,15 +73,33 @@ class QScanner(QMainWindow):
 
     Signals
     -------
-    data(list)
-        Emitted with ``[x, y]`` [m] at each position during a scan.
+    dataReady(dict)
+        Emitted at each position during a scan.  The base class emits
+        ``{'x': float, 'y': float}`` [m].  Subclasses may override
+        :meth:`_onDataReady` to merge in additional measurement fields
+        before emitting, e.g.::
+
+            def _onDataReady(self, pos: np.ndarray) -> None:
+                self.plotBelt(pos)
+                self.dataReady.emit(
+                    {'x': float(pos[0]), 'y': float(pos[1])}
+                    | self.instrument.acquire())
+
+        A sequence of emitted dicts can be collected directly into a
+        :class:`pandas.DataFrame`::
+
+            rows = []
+            scanner.dataReady.connect(rows.append)
+            # after scan:
+            df = pd.DataFrame(rows)
     '''
 
-    data = QtCore.Signal(list)
+    dataReady = QtCore.Signal(dict)
 
-    UIFILE = 'Scanner.ui'
     SCAN_PATTERN = PolarScan
+    UIFILE = 'Scanner.ui'
     _UIPATH = Path(__file__).parent / UIFILE
+    _SCAN_LOCKED = ('center', 'home', 'polargraph', 'scanner')
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -88,6 +111,10 @@ class QScanner(QMainWindow):
         super().__init__(*args, **kwargs)
         uic.loadUi(self._UIPATH, self)
         self._scanThread = None
+        self._latestPosition: np.ndarray | None = None
+        self._beltTimer = QtCore.QTimer(self)
+        self._beltTimer.setInterval(33)  # ~30 Hz
+        self._beltTimer.timeout.connect(self._updateBelt)
         self.scanner.pattern = self.SCAN_PATTERN()
         self.scanner.pattern.polargraph = self.polargraph.device
         configdir = configdir or f'~/.{type(self).__name__}'
@@ -131,7 +158,7 @@ class QScanner(QMainWindow):
         self.plot.setAspectLocked(ratio=1.)
         self.plot.showGrid(True, True, 0.2)
 
-        pen = pg.mkPen('r', style=Qt.PenStyle.DotLine)
+        pen = pg.mkPen('r', style=QtCore.Qt.PenStyle.DotLine)
         self.trajectoryPlot = pg.PlotDataItem(pen=pen)
         self.plot.addItem(self.trajectoryPlot)
         self.plotTrajectory()
@@ -148,8 +175,14 @@ class QScanner(QMainWindow):
 
     @QtCore.Slot(object)
     def _onDataReady(self, pos: np.ndarray) -> None:
-        self.plotBelt(pos)
-        self.data.emit([float(pos[0]), float(pos[1])])
+        self._latestPosition = pos
+        self.dataReady.emit({'x': float(pos[0]), 'y': float(pos[1])})
+
+    @QtCore.Slot()
+    def _updateBelt(self) -> None:
+        if self._latestPosition is not None:
+            self.plotBelt(self._latestPosition)
+            self._latestPosition = None
 
     @QtCore.Slot()
     def updatePlot(self) -> None:
@@ -201,8 +234,9 @@ class QScanner(QMainWindow):
     def scanStarted(self) -> None:
         self.showStatus('Scanning...')
         self.scan.setText('Stop')
-        for w in [self.center, self.home, self.polargraph, self.scanner]:
-            w.setEnabled(False)
+        for name in self._SCAN_LOCKED:
+            getattr(self, name).setEnabled(False)
+        self._beltTimer.start()
         self._scanThread = _ScanThread(self.scanner.pattern, parent=self)
         self._scanThread.finished.connect(self.scanFinished)
         self._scanThread.start()
@@ -216,9 +250,12 @@ class QScanner(QMainWindow):
 
     @QtCore.Slot()
     def scanFinished(self) -> None:
+        self._beltTimer.stop()
         self.scan.setText('Scan')
-        for w in [self.scan, self.center, self.home, self.polargraph, self.scanner]:
-            w.setEnabled(True)
+        self.scan.setEnabled(True)
+        for name in self._SCAN_LOCKED:
+            getattr(self, name).setEnabled(True)
+        self.plotBelt()
         self.showStatus('Scan complete')
 
     @QtCore.Slot()
@@ -246,12 +283,10 @@ class QScanner(QMainWindow):
             if __name__ == '__main__':
                 QMyScanner.example()
         '''
-        import sys
-
-        app = QApplication.instance() or QApplication(sys.argv)
+        pg.mkQApp(cls.__name__)
         widget = cls()
         widget.show()
-        sys.exit(app.exec())
+        pg.exec()
 
 
 if __name__ == '__main__':

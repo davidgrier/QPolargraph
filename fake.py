@@ -1,3 +1,5 @@
+import time
+from collections import deque
 from QInstrument.lib.QFakeInstrument import QFakeInstrument
 from QPolargraph.Motors import Motors
 from QPolargraph.Polargraph import Polargraph
@@ -74,9 +76,14 @@ class FakePolargraph(FakeMotors, Polargraph):
     (``ell``, ``y0``, ``pitch``, ``circumference``, ``steps``,
     ``speed``) are initialised to the same defaults as the real
     instrument and are fully readable and writable.
-    :meth:`~Polargraph.moveTo` and :meth:`~Polargraph.i2r` work
-    correctly since they depend only on those scalar properties and
-    the in-memory ``indexes``.
+
+    Unlike :class:`FakeMotors`, :meth:`moveTo` simulates belt motion by
+    building a Cartesian trajectory at step resolution.  Each call to
+    :attr:`position` advances one step along that trajectory, with
+    ``position[2] == 1`` while in motion and ``0`` on arrival.  This
+    lets :class:`~QPolargraph.QScanPattern.QScanPattern` run a full
+    scan loop and emit :attr:`~QScanPattern.dataReady` without real
+    hardware.
     '''
 
     def __init__(self,
@@ -86,6 +93,7 @@ class FakePolargraph(FakeMotors, Polargraph):
                  ell: float = 1.,
                  y0: float = 0.1,
                  speed: float = 100.,
+                 step_delay: float = 0.033,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.pitch = pitch
@@ -94,6 +102,59 @@ class FakePolargraph(FakeMotors, Polargraph):
         self.ell = ell
         self.y0 = y0
         self.speed = speed
+        self.step_delay = step_delay
+        self._cartesian_trajectory: deque = deque()
+
+    def moveTo(self, x: float, y: float) -> None:
+        '''Move to ``(x, y)`` [m], building an intermediate trajectory.
+
+        Generates up to 10 Cartesian waypoints between the current
+        position and the target.  Subsequent calls to :attr:`position`
+        consume the trajectory one step at a time, returning
+        ``running=1`` until the final step is reached.
+
+        Set :attr:`step_delay` to a positive value (seconds) to
+        throttle playback and produce smooth belt animation in the UI.
+        The default of ``0`` runs as fast as possible, which is
+        appropriate for automated tests.
+
+        Parameters
+        ----------
+        x : float
+            Target horizontal coordinate [m].
+        y : float
+            Target vertical coordinate [m].
+        '''
+        x0, y0, _ = self.i2r(self._store.get('indexes', [0, 0, 0]))
+        dist = np.hypot(x - x0, y - y0)
+        nsteps = max(1, min(10, round(dist / self.ds)))
+        xs = np.linspace(x0, x, nsteps + 1)[1:]
+        ys = np.linspace(y0, y, nsteps + 1)[1:]
+        self._cartesian_trajectory = deque(zip(xs.tolist(), ys.tolist()))
+        super().moveTo(x, y)
+
+    @property
+    def position(self) -> np.ndarray:
+        '''Current Cartesian coordinates ``(x, y, running)`` [m, m, flag].
+
+        While a trajectory is in progress, advances one step per call
+        and returns ``running=1``.  Returns ``running=0`` on the final
+        step, after which subsequent calls return the stored position.
+        If :attr:`step_delay` is positive, sleeps that many seconds
+        before advancing, throttling playback to simulate hardware
+        timing.
+        '''
+        if self._cartesian_trajectory:
+            if self.step_delay > 0:
+                time.sleep(self.step_delay)
+            x, y = self._cartesian_trajectory.popleft()
+            running = float(bool(self._cartesian_trajectory))
+            return np.array([x, y, running])
+        return self.i2r(self._store.get('indexes', [0, 0, 0]))
+
+    def stop(self) -> None:
+        '''Halt motion by discarding the remaining trajectory.'''
+        self._cartesian_trajectory.clear()
 
 
 __all__ = ['FakePolargraph', 'FakeMotors']

@@ -10,4 +10,4 @@ def qapp_session(qapp):
 
 @pytest.fixture
 def polargraph():
-    return FakePolargraph()
+    return FakePolargraph(step_delay=0.)
