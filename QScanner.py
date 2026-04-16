@@ -12,6 +12,17 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+class _ScanThread(QtCore.QThread):
+    '''Worker thread that runs a scan pattern without blocking the event loop.'''
+
+    def __init__(self, device, parent=None):
+        super().__init__(parent)
+        self._device = device
+
+    def run(self) -> None:
+        self._device.scan()
+
+
 class QScanner(QMainWindow):
 
     '''Application framework for a polargraph scanner.
@@ -34,7 +45,8 @@ class QScanner(QMainWindow):
     ----------
     configdir : str
         Directory for storing instrument configuration.
-        Default: ``~/.QScanner``.
+        Defaults to ``~/.<ClassName>`` where *ClassName* is the name of
+        the concrete subclass, so each subclass gets its own config directory.
 
     Methods
     -------
@@ -46,7 +58,7 @@ class QScanner(QMainWindow):
     Signals
     -------
     data(list)
-        Emitted when data are ready; carries ``[x, y]`` [m].
+        Emitted with ``[x, y]`` [m] at each position during a scan.
     '''
 
     data = QtCore.Signal(list)
@@ -54,22 +66,34 @@ class QScanner(QMainWindow):
     UIFILE = 'Scanner.ui'
 
     def __init__(self, *args, configdir: str | None = None, **kwargs):
-        pg.setConfigOption('background', 'w')
-        pg.setConfigOption('foreground', 'k')
+        self._configurePyqtgraph()
         super().__init__(*args, **kwargs)
         uic.loadUi(self._uiPath(), self)
-        self.showStatus = self.statusBar().showMessage
+        self._scanThread = None
         self.scanner.device.polargraph = self.polargraph.device
-        configdir = configdir or '~/.QScanner'
+        configdir = configdir or f'~/.{type(self).__name__}'
         self.config = Configure(configdir=configdir)
         self.restoreSettings()
         self._configurePlot()
         self._connectSignals()
 
+    @classmethod
+    def _configurePyqtgraph(cls) -> None:
+        pg.setConfigOption('background', 'w')
+        pg.setConfigOption('foreground', 'k')
+
     def closeEvent(self, event) -> None:
         logger.debug(f'Closing: {event.type()}')
+        if self._scanThread is not None and self._scanThread.isRunning():
+            self.scanner.device.interrupt()
+            self._scanThread.wait()
         self.saveSettings()
         self.polargraph.device.close()
+        super().closeEvent(event)
+
+    def showStatus(self, message: str) -> None:
+        '''Display a message on the status bar.'''
+        self.statusBar().showMessage(message)
 
     @classmethod
     def _uiPath(cls) -> Path:
@@ -88,8 +112,7 @@ class QScanner(QMainWindow):
         self.scan.clicked.connect(self.toggleScan)
         self.polargraph.propertyChanged.connect(self.updatePlot)
         self.scanner.patternChanged.connect(self.updatePlot)
-        self.scanner.device.dataReady.connect(self.plotBelt)
-        self.scanner.device.scanFinished.connect(self.scanFinished)
+        self.scanner.device.dataReady.connect(self._onDataReady)
         self.home.clicked.connect(self.scanner.device.home)
         self.center.clicked.connect(self.scanner.device.center)
         self.actionSaveSettings.triggered.connect(self.saveSettings)
@@ -117,6 +140,11 @@ class QScanner(QMainWindow):
         self.dataPlot = pg.ScatterPlotItem(pen=None)
         self.plot.addItem(self.dataPlot)
 
+    @QtCore.Slot(object)
+    def _onDataReady(self, pos: np.ndarray) -> None:
+        self.plotBelt(pos)
+        self.data.emit([float(pos[0]), float(pos[1])])
+
     @QtCore.Slot()
     def updatePlot(self) -> None:
         self.plotTrajectory()
@@ -138,7 +166,6 @@ class QScanner(QMainWindow):
         x = [-p.ell / 2., xp, p.ell / 2]
         y = [0, yp, 0]
         self.beltPlot.setData(x, y)
-        QApplication.processEvents()
 
     def plotData(self, x, y, hue) -> None:
         '''Add scatter points to the data plot.
@@ -159,7 +186,7 @@ class QScanner(QMainWindow):
 
     @QtCore.Slot()
     def toggleScan(self) -> None:
-        if not self.polargraph.device.running():
+        if not self.scanner.device.scanning():
             self.scanStarted()
         else:
             self.scanAborted()
@@ -170,7 +197,9 @@ class QScanner(QMainWindow):
         self.scan.setText('Stop')
         for w in [self.center, self.home, self.polargraph, self.scanner]:
             w.setEnabled(False)
-        self.scanner.device.scan()
+        self._scanThread = _ScanThread(self.scanner.device, parent=self)
+        self._scanThread.finished.connect(self.scanFinished)
+        self._scanThread.start()
 
     @QtCore.Slot()
     def scanAborted(self) -> None:
