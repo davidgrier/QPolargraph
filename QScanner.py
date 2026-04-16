@@ -16,12 +16,12 @@ logger = logging.getLogger(__name__)
 class _ScanThread(QtCore.QThread):
     '''Worker thread that runs a scan pattern without blocking the event loop.'''
 
-    def __init__(self, device, parent=None):
+    def __init__(self, pattern, parent=None):
         super().__init__(parent)
-        self._device = device
+        self._pattern = pattern
 
     def run(self) -> None:
-        self._device.scan()
+        self._pattern.scan()
 
 
 class QScanner(QMainWindow):
@@ -82,8 +82,8 @@ class QScanner(QMainWindow):
         super().__init__(*args, **kwargs)
         uic.loadUi(self._uiPath(), self)
         self._scanThread = None
-        self.scanner.device = self.SCAN_PATTERN()
-        self.scanner.device.polargraph = self.polargraph.device
+        self.scanner.pattern = self.SCAN_PATTERN()
+        self.scanner.pattern.polargraph = self.polargraph.device
         configdir = configdir or f'~/.{type(self).__name__}'
         self.config = Configure(configdir=configdir)
         self.restoreSettings()
@@ -98,7 +98,7 @@ class QScanner(QMainWindow):
     def closeEvent(self, event) -> None:
         logger.debug(f'Closing: {event.type()}')
         if self._scanThread is not None and self._scanThread.isRunning():
-            self.scanner.device.interrupt()
+            self.scanner.pattern.interrupt()
             self._scanThread.wait()
         self.saveSettings()
         self.polargraph.device.close()
@@ -125,9 +125,9 @@ class QScanner(QMainWindow):
         self.scan.clicked.connect(self.toggleScan)
         self.polargraph.propertyChanged.connect(self.updatePlot)
         self.scanner.patternChanged.connect(self.updatePlot)
-        self.scanner.device.dataReady.connect(self._onDataReady)
-        self.home.clicked.connect(self.scanner.device.home)
-        self.center.clicked.connect(self.scanner.device.center)
+        self.scanner.pattern.dataReady.connect(self._onDataReady)
+        self.home.clicked.connect(self.scanner.pattern.home)
+        self.center.clicked.connect(self.scanner.pattern.center)
         self.actionSaveSettings.triggered.connect(self.saveSettings)
         self.actionRestoreSettings.triggered.connect(self.restoreSettings)
 
@@ -165,7 +165,7 @@ class QScanner(QMainWindow):
 
     @QtCore.Slot()
     def plotTrajectory(self) -> None:
-        x, y = self.scanner.device.trajectory()
+        x, y = self.scanner.pattern.trajectory()
         self.trajectoryPlot.setData(x, y)
 
     @QtCore.Slot()
@@ -199,7 +199,7 @@ class QScanner(QMainWindow):
 
     @QtCore.Slot()
     def toggleScan(self) -> None:
-        if not self.scanner.device.scanning():
+        if not self.scanner.pattern.scanning():
             self.scanStarted()
         else:
             self.scanAborted()
@@ -210,14 +210,14 @@ class QScanner(QMainWindow):
         self.scan.setText('Stop')
         for w in [self.center, self.home, self.polargraph, self.scanner]:
             w.setEnabled(False)
-        self._scanThread = _ScanThread(self.scanner.device, parent=self)
+        self._scanThread = _ScanThread(self.scanner.pattern, parent=self)
         self._scanThread.finished.connect(self.scanFinished)
         self._scanThread.start()
 
     @QtCore.Slot()
     def scanAborted(self) -> None:
         self.showStatus('Aborting scan')
-        self.scanner.device.interrupt()
+        self.scanner.pattern.interrupt()
         self.scan.setText('Stopping')
         self.scan.setEnabled(False)
 

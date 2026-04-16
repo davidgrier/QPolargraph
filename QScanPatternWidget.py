@@ -9,12 +9,12 @@ class QScanPatternWidget(QtWidgets.QWidget):
 
     '''Widget for controlling the scan-pattern parameters.
 
-    Wraps a :class:`~QPolargraph.QScanPattern.QScanPattern` device in
+    Wraps a :class:`~QPolargraph.QScanPattern.QScanPattern` instance in
     the ``RasterScanWidget.ui`` layout, with direct spinbox-to-property
-    bindings.  The default device is
+    bindings.  The default pattern is
     :class:`~QPolargraph.PolarScan.PolarScan`; pass a different
     :class:`~QPolargraph.QScanPattern.QScanPattern` subclass instance
-    to ``device`` to use a different scan pattern.
+    to ``pattern`` to use a different scan pattern.
 
     Signals
     -------
@@ -26,12 +26,12 @@ class QScanPatternWidget(QtWidgets.QWidget):
 
     UIFILE = 'RasterScanWidget.ui'
 
-    def __init__(self, *args, device=None, **kwargs):
+    def __init__(self, *args, pattern=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self._device = None
+        self._pattern = None
         uic.loadUi(self._uiPath(), self)
         self._connectSignals()
-        self.device = device or PolarScan()
+        self.pattern = pattern or PolarScan()
 
     @classmethod
     def _uiPath(cls) -> Path:
@@ -41,31 +41,31 @@ class QScanPatternWidget(QtWidgets.QWidget):
         raise AttributeError(f'{cls.__name__} has no UIFILE defined')
 
     @property
-    def device(self):
+    def pattern(self):
         '''The scan pattern controlled by this widget.'''
-        return self._device
+        return self._pattern
 
-    @device.setter
-    def device(self, value) -> None:
-        self._device = value
+    @pattern.setter
+    def pattern(self, value) -> None:
+        self._pattern = value
         if value is not None:
-            self._syncFromDevice()
+            self._syncFromPattern()
 
-    def _syncFromDevice(self) -> None:
+    def _syncFromPattern(self) -> None:
         for name in ('width', 'height', 'dx', 'dy', 'step'):
             widget = getattr(self, name)
             with QtCore.QSignalBlocker(widget):
-                widget.setValue(getattr(self.device, name))
+                widget.setValue(getattr(self.pattern, name))
 
     def _connectSignals(self) -> None:
         for name in ('width', 'height', 'dx', 'dy', 'step'):
-            getattr(self, name).valueChanged.connect(self._updateDevice)
+            getattr(self, name).valueChanged.connect(self._updatePattern)
 
-    def _updateDevice(self) -> None:
-        if self._device is None:
+    def _updatePattern(self) -> None:
+        if self._pattern is None:
             return
         for name in ('width', 'height', 'dx', 'dy', 'step'):
-            setattr(self.device, name, getattr(self, name).value())
+            setattr(self.pattern, name, getattr(self, name).value())
         self.patternChanged.emit()
 
     @property
@@ -81,7 +81,7 @@ class QScanPatternWidget(QtWidgets.QWidget):
             if isinstance(widget, QtWidgets.QDoubleSpinBox):
                 with QtCore.QSignalBlocker(widget):
                     widget.setValue(float(value))
-        self._updateDevice()
+        self._updatePattern()
 
     @classmethod
     def example(cls) -> None:
