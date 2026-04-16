@@ -3,6 +3,7 @@ from qtpy.QtWidgets import QApplication, QMainWindow
 from qtpy import uic, QtCore
 from qtpy.QtCore import Qt
 from QInstrument.lib.Configure import Configure
+from QPolargraph.PolarScan import PolarScan
 import pyqtgraph as pg
 import numpy as np
 import inspect
@@ -29,7 +30,7 @@ class QScanner(QMainWindow):
 
     Loads the ``Scanner.ui`` layout, wires up a
     :class:`~QPolargraph.QPolargraphWidget.QPolargraphWidget` and a
-    :class:`~QPolargraph.QRasterScanWidget.QRasterScanWidget`, and
+    :class:`~QPolargraph.QScanPatternWidget.QScanPatternWidget`, and
     provides a live :mod:`pyqtgraph` display of the scan trajectory and
     current belt geometry. Intended to be subclassed for
     experiment-specific scanner applications.
@@ -40,6 +41,16 @@ class QScanner(QMainWindow):
         Filename of the Qt Designer ``.ui`` file.  Subclasses may
         override this to provide a different layout while inheriting
         all scanner behavior.
+    SCAN_PATTERN : type
+        :class:`~QPolargraph.QScanPattern.QScanPattern` subclass to
+        instantiate as the scan device.  Default:
+        :class:`~QPolargraph.PolarScan.PolarScan`.  Subclasses override
+        this to select a different scan pattern:
+
+        .. code-block:: python
+
+            class QMyScanner(QScanner):
+                SCAN_PATTERN = RasterScan
 
     Properties
     ----------
@@ -64,12 +75,14 @@ class QScanner(QMainWindow):
     data = QtCore.Signal(list)
 
     UIFILE = 'Scanner.ui'
+    SCAN_PATTERN = PolarScan
 
     def __init__(self, *args, configdir: str | None = None, **kwargs):
         self._configurePyqtgraph()
         super().__init__(*args, **kwargs)
         uic.loadUi(self._uiPath(), self)
         self._scanThread = None
+        self.scanner.device = self.SCAN_PATTERN()
         self.scanner.device.polargraph = self.polargraph.device
         configdir = configdir or f'~/.{type(self).__name__}'
         self.config = Configure(configdir=configdir)

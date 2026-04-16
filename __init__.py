@@ -12,7 +12,7 @@ _lazy = {
     'FakeMotors':         'fake',
     'FakePolargraph':     'fake',
     'QPolargraphWidget':  'QPolargraphWidget',
-    'QRasterScanWidget':  'QRasterScanWidget',
+    'QScanPatternWidget': 'QScanPatternWidget',
     'QScanner':           'QScanner',
     'QScanPattern':       'QScanPattern',
     'RasterScan':         'RasterScan',
