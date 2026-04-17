@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>159</width>
-    <height>118</height>
+    <width>300</width>
+    <height>76</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,127 +18,190 @@
     <number>2</number>
    </property>
    <property name="topMargin">
-    <number>1</number>
+    <number>2</number>
    </property>
    <property name="rightMargin">
     <number>2</number>
    </property>
    <property name="bottomMargin">
-    <number>1</number>
+    <number>2</number>
+   </property>
+   <property name="horizontalSpacing">
+    <number>6</number>
    </property>
    <property name="verticalSpacing">
-    <number>1</number>
+    <number>2</number>
    </property>
    <item row="0" column="0">
     <widget class="QLabel" name="widthLabel">
      <property name="text">
-      <string>Width</string>
+      <string>width</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignVCenter</set>
+     </property>
+     <property name="buddy">
+      <cstring>width</cstring>
      </property>
     </widget>
    </item>
    <item row="0" column="1">
+    <widget class="QDoubleSpinBox" name="width">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="suffix">
+      <string> m</string>
+     </property>
+     <property name="minimum">
+      <double>0.100000000000000</double>
+     </property>
+     <property name="maximum">
+      <double>10.000000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>0.010000000000000</double>
+     </property>
+     <property name="value">
+      <double>0.600000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="2">
     <widget class="QLabel" name="heightLabel">
      <property name="text">
-      <string>Height</string>
+      <string>height</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignVCenter</set>
+     </property>
+     <property name="buddy">
+      <cstring>height</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="3">
+    <widget class="QDoubleSpinBox" name="height">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="suffix">
+      <string> m</string>
+     </property>
+     <property name="minimum">
+      <double>0.100000000000000</double>
+     </property>
+     <property name="maximum">
+      <double>10.000000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>0.010000000000000</double>
+     </property>
+     <property name="value">
+      <double>0.600000000000000</double>
      </property>
     </widget>
    </item>
    <item row="1" column="0">
-    <widget class="QDoubleSpinBox" name="width">
-     <property name="suffix">
-      <string> m</string>
+    <widget class="QLabel" name="dxLabel">
+     <property name="text">
+      <string>&#x394;x</string>
      </property>
-     <property name="minimum">
-      <double>0.100000000000000</double>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignVCenter</set>
      </property>
-     <property name="maximum">
-      <double>10.000000000000000</double>
-     </property>
-     <property name="singleStep">
-      <double>0.010000000000000</double>
-     </property>
-     <property name="value">
-      <double>0.600000000000000</double>
+     <property name="buddy">
+      <cstring>dx</cstring>
      </property>
     </widget>
    </item>
    <item row="1" column="1">
-    <widget class="QDoubleSpinBox" name="height">
+    <widget class="QDoubleSpinBox" name="dx">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="suffix">
       <string> m</string>
      </property>
      <property name="minimum">
-      <double>0.100000000000000</double>
+      <double>-1.000000000000000</double>
      </property>
      <property name="maximum">
-      <double>10.000000000000000</double>
+      <double>1.000000000000000</double>
+     </property>
+     <property name="singleStep">
+      <double>0.010000000000000</double>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="2">
+    <widget class="QLabel" name="dyLabel">
+     <property name="text">
+      <string>&#x394;y</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignVCenter</set>
+     </property>
+     <property name="buddy">
+      <cstring>dy</cstring>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="3">
+    <widget class="QDoubleSpinBox" name="dy">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="suffix">
+      <string> m</string>
+     </property>
+     <property name="minimum">
+      <double>-1.000000000000000</double>
+     </property>
+     <property name="maximum">
+      <double>1.000000000000000</double>
      </property>
      <property name="singleStep">
       <double>0.010000000000000</double>
      </property>
      <property name="value">
-      <double>0.600000000000000</double>
+      <double>0.100000000000000</double>
      </property>
     </widget>
    </item>
    <item row="2" column="0">
-    <widget class="QLabel" name="dxLabel">
+    <widget class="QLabel" name="stepLabel">
      <property name="text">
-      <string>Δx</string>
+      <string>step</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignRight|Qt::AlignVCenter</set>
+     </property>
+     <property name="buddy">
+      <cstring>step</cstring>
      </property>
     </widget>
    </item>
    <item row="2" column="1">
-    <widget class="QLabel" name="dyLabel">
-     <property name="text">
-      <string>Δy</string>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="0">
-    <widget class="QDoubleSpinBox" name="dx">
-     <property name="suffix">
-      <string> m</string>
-     </property>
-     <property name="minimum">
-      <double>-1.000000000000000</double>
-     </property>
-     <property name="maximum">
-      <double>1.000000000000000</double>
-     </property>
-     <property name="singleStep">
-      <double>0.010000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="3" column="1">
-    <widget class="QDoubleSpinBox" name="dy">
-     <property name="suffix">
-      <string> m</string>
-     </property>
-     <property name="minimum">
-      <double>-1.000000000000000</double>
-     </property>
-     <property name="maximum">
-      <double>1.000000000000000</double>
-     </property>
-     <property name="singleStep">
-      <double>0.010000000000000</double>
-     </property>
-     <property name="value">
-      <double>0.100000000000000</double>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="0">
-    <widget class="QLabel" name="stepLabel">
-     <property name="text">
-      <string>Step</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="0">
     <widget class="QDoubleSpinBox" name="step">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="suffix">
       <string> mm</string>
      </property>
