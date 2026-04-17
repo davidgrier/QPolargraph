@@ -165,17 +165,20 @@ class _FlashWorker(QtCore.QThread):
             return set()
 
     def _ensure_libraries(self) -> bool:
-        '''Install any missing Arduino libraries; return True when all present.'''
+        '''Install missing and upgrade outdated Arduino libraries.'''
         self.output.emit('Checking Arduino libraries...')
         installed = self._installed_libraries()
         missing = [lib for lib in ARDUINO_LIBS if lib not in installed]
-        if not missing:
-            self.output.emit('All required libraries are installed.')
-            return True
         for lib in missing:
             self.output.emit(f'Installing {lib}...')
             if not self._run('arduino-cli', 'lib', 'install', lib, timeout=60):
                 return False
+        present = [lib for lib in ARDUINO_LIBS if lib in installed]
+        for lib in present:
+            self.output.emit(f'Updating {lib}...')
+            self._run('arduino-cli', 'lib', 'upgrade', lib, timeout=60)
+        if not missing:
+            self.output.emit('All required libraries are up to date.')
         return True
 
     def run(self) -> None:
@@ -266,7 +269,7 @@ class FlashDialog(QtWidgets.QDialog):
             desc = port.description() or 'Unknown board'
             self._port_combo.addItem(
                 f'{port.portName()} — {desc}',
-                userData=port.portName()
+                userData=port.systemLocation()
             )
 
     def _flash(self) -> None:
@@ -275,7 +278,8 @@ class FlashDialog(QtWidgets.QDialog):
             return
         self._flash_btn.setEnabled(False)
         self._output.clear()
-        self._output.appendPlainText(f'Detecting board on {port}...')
+        display = self._port_combo.currentText().split(' — ')[0]
+        self._output.appendPlainText(f'Detecting board on {display}...')
         fqbn = detect_fqbn(port)
         self._output.appendPlainText(f'Board: {fqbn}')
         self._worker = _FlashWorker(port, fqbn, self)

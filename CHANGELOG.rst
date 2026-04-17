@@ -1,6 +1,14 @@
 Changelog
 =========
 
+1.0.1 (2026-04-17)
+------------------
+
+- Fixed ``FlashFirmware``: use ``systemLocation()`` instead of ``portName()``
+  so ``avrdude`` receives the full device path (e.g. ``/dev/tty.usbmodem2101``).
+- Fixed ``FlashFirmware``: use ``arduino-cli lib upgrade`` to update already-installed
+  Arduino libraries before flashing.
+
 1.0.0 (2026-04-15)
 ------------------
 
