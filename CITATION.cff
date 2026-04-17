@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "QPolargraph"
+version: "1.0.0"
+doi: 10.5281/zenodo.19630922
+date-released: "2026-04-15"
+authors:
+  - family-names: Grier
+    given-names: David G.
+    affiliation: New York University
+    orcid: https://orcid.org/0000-0002-4382-5139
+license: GPL-3.0
+repository-code: "https://github.com/davidgrier/QPolargraph"
+url: "https://qpolargraph.readthedocs.io"
+abstract: >
+  A Qt-based instrument interface for a two-dimensional polargraph
+  scanner. Provides hardware abstraction for Arduino-driven stepper
+  motors, Cartesian coordinate conversion, scan-pattern generation,
+  and a live-display GUI application framework.
+keywords:
+  - polargraph
+  - scanner
+  - stepper motor
+  - Arduino
+  - Qt
+  - scientific instrument
