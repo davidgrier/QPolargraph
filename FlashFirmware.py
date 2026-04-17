@@ -15,8 +15,8 @@ in a background thread:
 1. **Check libraries** — compares ``ARDUINO_LIBS`` against the output of
    ``arduino-cli lib list``.  Any missing libraries are installed
    automatically via ``arduino-cli lib install``.
-2. **Compile** — ``arduino-cli compile --fqbn <fqbn> arduino/acam3/``
-3. **Upload** — ``arduino-cli upload --fqbn <fqbn> --port <port> arduino/acam3/``
+2. **Compile** — ``arduino-cli compile --fqbn <fqbn> hardware/arduino/acam3/``
+3. **Upload** — ``arduino-cli upload --fqbn <fqbn> --port <port> hardware/arduino/acam3/``
 
 Each step streams its output to the dialog's text area in real time.
 The flash button is re-enabled on completion, and a ``QMessageBox``
@@ -65,7 +65,7 @@ ARDUINO_VIDS = {
     0x0403,  # FTDI (some clones)
 }
 
-SKETCH = Path(__file__).parent / 'arduino' / 'acam3'
+SKETCH = Path(__file__).parent / 'hardware' / 'arduino' / 'acam3'
 DEFAULT_FQBN = 'arduino:avr:uno'
 ARDUINO_LIBS = [
     'Adafruit Motor Shield V2 Library',

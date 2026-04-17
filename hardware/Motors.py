@@ -5,7 +5,7 @@ Hardware requirements
 Arduino
     Any Arduino with a USB serial port and I2C support (Uno, Mega, etc.).
     The board must be flashed with the ``acam3`` firmware bundled at
-    ``arduino/acam3/acam3.ino``.
+    ``hardware/arduino/acam3/acam3.ino``.
 
 Adafruit Motor Shield v2
     The shield (I2C address ``0x60``) must be seated on the Arduino.
@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 
 
 def _firmware_version() -> str:
-    ino = Path(__file__).parent.parent / 'arduino' / 'acam3' / 'acam3.ino'
+    ino = Path(__file__).parent / 'arduino' / 'acam3' / 'acam3.ino'
     pattern = re.compile(r'#define\s+VERSION\s+"acam(\S+)"')
     with ino.open() as f:
         for line in f:

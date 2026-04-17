@@ -31,13 +31,26 @@ of one side of the V, moving the payload in two dimensions.
 
 ## Firmware
 
-Load `arduino/acam3/acam3.ino` onto the Arduino using the
-[Arduino IDE](https://www.arduino.cc/en/software) before first use.
+The Arduino must be flashed with `hardware/arduino/acam3/acam3.ino` before first use.
+The easiest way is to use the built-in installer:
 
-The Python package version and the firmware version are coupled: `Motors`
-checks that the connected Arduino reports firmware version
-`Motors.FIRMWARE_VERSION` during `identify()` and refuses to open the
-port if they do not match.
+```bash
+qpolargraph-flash
+```
+
+This opens a dialog that detects the attached Arduino, installs any missing
+Arduino libraries (`Adafruit Motor Shield V2 Library`, `AccelStepper`),
+compiles, and uploads the firmware — all without opening the Arduino IDE.
+It requires [`arduino-cli`](https://arduino.github.io/arduino-cli/) to be
+installed and on `PATH`.
+
+Alternatively, open `hardware/arduino/acam3/acam3.ino` in the
+[Arduino IDE](https://www.arduino.cc/en/software) and upload manually.
+
+The firmware and package versions are coupled: `Motors.identify()` checks
+that the connected Arduino reports the expected firmware version and that
+the Adafruit Motor Shield is detected at I2C address `0x60`, refusing to
+open the port if either check fails.
 
 ## Installation
 
@@ -176,7 +189,7 @@ git config core.hooksPath .githooks
 ## Acknowledgements
 
 Work on this project at New York University is supported by the
-National Science Foundation of the United States under award number DMR-2104837.
+National Science Foundation of the United States under award number DMR-2438983.
 
 ## References
 

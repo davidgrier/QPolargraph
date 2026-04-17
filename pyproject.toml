@@ -57,7 +57,8 @@ packages = [
 ]
 
 [tool.setuptools.package-data]
-"QPolargraph" = ["**/*.ui", "**/*.png", "**/*.ino"]
+"QPolargraph" = ["**/*.ui", "**/*.png"]
+"QPolargraph.hardware" = ["arduino/**/*.ino"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
