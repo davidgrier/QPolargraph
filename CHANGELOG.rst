@@ -1,6 +1,17 @@
 Changelog
 =========
 
+1.0.2 (2026-04-17)
+------------------
+
+- Fixed ``QScanner``: serial I/O stays on the main thread; ``processEvents()``
+  in the scan loop keeps the UI responsive without crossing thread boundaries.
+- Added ``Motors.scan_i2c()`` diagnostic to report I2C devices found on the
+  Arduino's bus — useful for diagnosing motor shield detection failures.
+- Added ``Motors.scan_i2c()`` error hints when motor shield is not detected.
+- Firmware 3.3.2: explicit ``Wire.begin()``; retry ``AFMS.begin()`` up to
+  5 times on startup; ``I`` command scans and reports I2C bus addresses.
+
 1.0.1 (2026-04-17)
 ------------------
 

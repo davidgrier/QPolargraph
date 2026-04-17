@@ -146,9 +146,33 @@ class Motors(QSerialInstrument):
             return False
         if shield_status != 'OK':
             logger.error(' Adafruit Motor Shield not detected (I2C address 0x60)')
+            logger.error(' Check that the shield is fully seated on the Arduino')
+            logger.error(' and re-flash the firmware if the problem persists')
             return False
         logger.info(f' Arduino running acam {fw_version}, motor shield OK')
         return True
+
+    def scan_i2c(self) -> list[str]:
+        '''Scan the I2C bus and return a list of responding addresses.
+
+        Sends the ``I`` command to the firmware, which probes all 7-bit
+        I2C addresses and reports each one that acknowledges.  Useful for
+        diagnosing motor shield detection failures.
+
+        Returns
+        -------
+        list[str]
+            Hex address strings (e.g. ``['0x60']``), or an empty list if
+            nothing responds or the port is not open.
+        '''
+        if not self.isOpen():
+            return []
+        res = self.handshake('I', timeout=2000)
+        payload = res.removeprefix('I:').strip()
+        if not payload or payload == 'NONE':
+            return []
+        return payload.split(',')
+
 
     def process(self, data: str) -> None:
         logger.debug(f' received: {data}')

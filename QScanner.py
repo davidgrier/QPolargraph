@@ -20,16 +20,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class _ScanThread(QtCore.QThread):
-    '''Worker thread that runs a callable without blocking the event loop.'''
-
-    def __init__(self, fn: callable,
-                 parent: QtWidgets.QWidget | None = None):
-        super().__init__(parent)
-        self._fn = fn
-
-    def run(self) -> None:
-        self._fn()
 
 
 class QScanner(QtWidgets.QMainWindow):
@@ -116,7 +106,6 @@ class QScanner(QtWidgets.QMainWindow):
         QPolargraphWidget._fake = fake
         uic.loadUi(self._UIPATH, self)
         QPolargraphWidget._fake = False
-        self._scanThread = None
         self._latestPosition: np.ndarray | None = None
         self._beltTimer = QtCore.QTimer(self)
         self._beltTimer.setInterval(33)  # ~30 Hz
@@ -136,9 +125,11 @@ class QScanner(QtWidgets.QMainWindow):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         logger.debug(f'Closing: {event.type()}')
-        if self._scanThread is not None and self._scanThread.isRunning():
+        if self.scanner.pattern.scanning():
             self.scanner.pattern.interrupt()
-            self._scanThread.wait()
+            event.ignore()
+            QtCore.QTimer.singleShot(100, self.close)
+            return
         self.saveSettings()
         self.polargraph.device.close()
         super().closeEvent(event)
@@ -241,13 +232,17 @@ class QScanner(QtWidgets.QMainWindow):
 
     def _startMove(self, fn: callable,
                    on_finished: callable | None = None) -> None:
-        '''Run fn in a background thread with UI locked and belt timer active.'''
+        '''Run fn on the main thread with UI locked and belt timer active.
+
+        Serial I/O via QSerialPort must stay on the thread that opened the
+        port (the main thread).  processEvents() calls inside the scan loop
+        keep the UI responsive while the blocking serial calls execute.
+        '''
         for name in self._SCAN_LOCKED:
             getattr(self, name).setEnabled(False)
         self._beltTimer.start()
-        self._scanThread = _ScanThread(fn, parent=self)
-        self._scanThread.finished.connect(on_finished or self._moveFinished)
-        self._scanThread.start()
+        fn()
+        (on_finished or self._moveFinished)()
 
     @QtCore.Slot()
     def _moveFinished(self) -> None:

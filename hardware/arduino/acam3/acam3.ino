@@ -19,7 +19,7 @@
 #include <AccelStepper.h>
 #include <Adafruit_MotorShield.h>
 
-#define VERSION "acam3.3.0"
+#define VERSION "acam3.3.2"
 
 Adafruit_MotorShield AFMS(0x60);
 Adafruit_StepperMotor *motor1 = AFMS.getStepper(200, 1);
@@ -144,6 +144,23 @@ void query_isrunning() {
   Serial.println(is_running);
 }
 
+void scan_i2c() {
+  bool first = true;
+  Serial.print("I:");
+  for (byte addr = 1; addr < 127; addr++) {
+    Wire.beginTransmission(addr);
+    if (Wire.endTransmission() == 0) {
+      if (!first) Serial.print(',');
+      Serial.print("0x");
+      if (addr < 16) Serial.print('0');
+      Serial.print(addr, HEX);
+      first = false;
+    }
+  }
+  if (first) Serial.print("NONE");
+  Serial.println();
+}
+
 /* Dispatch commands */
 void parse_command() {
   switch (cmd[0]) {
@@ -172,6 +189,9 @@ void parse_command() {
       Serial.print(VERSION);
       Serial.println(shield_ok ? ":OK" : ":NOSHIELD");
       break;
+    case 'I':
+      scan_i2c();
+      break;
     default:
       Serial.println(cmd);
       break;
@@ -187,7 +207,11 @@ void setup() {
   }
   Serial.setTimeout(100);
 
-  shield_ok = AFMS.begin();
+  Wire.begin();
+  for (int attempt = 0; attempt < 5 && !shield_ok; attempt++) {
+    shield_ok = AFMS.begin();
+    if (!shield_ok) delay(100);
+  }
   stepper1.setMaxSpeed(1000.0);
   stepper2.setMaxSpeed(1000.0);
   stepper1.setCurrentPosition(0);

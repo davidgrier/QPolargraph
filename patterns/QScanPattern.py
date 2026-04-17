@@ -1,4 +1,5 @@
 from qtpy import QtCore
+from qtpy.QtCore import QCoreApplication
 import numpy as np
 import logging
 
@@ -191,6 +192,7 @@ class QScanPattern(QtCore.QObject):
             logger.debug(f'Moving to: {vertex}')
             self.polargraph.moveTo(*vertex)
             while True:
+                QCoreApplication.processEvents()
                 if self._interrupt:
                     self.polargraph.stop()
                 x, y, self._moving = self.polargraph.position
