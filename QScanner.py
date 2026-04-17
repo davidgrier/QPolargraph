@@ -106,10 +106,14 @@ class QScanner(QtWidgets.QMainWindow):
         if 'UIFILE' in cls.__dict__:
             cls._UIPATH = Path(inspect.getfile(cls)).parent / cls.UIFILE
 
-    def __init__(self, *args, configdir: str | None = None, **kwargs):
+    def __init__(self, *args, configdir: str | None = None,
+                 fake: bool = False, **kwargs):
         self._configurePyqtgraph()
         super().__init__(*args, **kwargs)
         uic.loadUi(self._UIPATH, self)
+        if fake:
+            self.polargraph.device.close()
+            self.polargraph.device = self.polargraph._fakeCls()()
         self._scanThread = None
         self._latestPosition: np.ndarray | None = None
         self._beltTimer = QtCore.QTimer(self)
@@ -283,9 +287,19 @@ class QScanner(QtWidgets.QMainWindow):
 
             if __name__ == '__main__':
                 QMyScanner.example()
+
+        Accepts ``-f`` / ``--fake`` on the command line to force use of
+        the fake instrument even when real hardware is available.
         '''
+        import sys
+        import argparse
+        parser = argparse.ArgumentParser(description=cls.__name__)
+        parser.add_argument('-f', '--fake', action='store_true',
+                            help='use fake instrument')
+        args, remaining = parser.parse_known_args()
+        sys.argv = sys.argv[:1] + remaining
         pg.mkQApp(cls.__name__)
-        widget = cls()
+        widget = cls(fake=args.fake)
         widget.show()
         pg.exec()
 
