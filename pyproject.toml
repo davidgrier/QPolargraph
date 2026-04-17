@@ -50,6 +50,7 @@ qpolargraph-flash = "QPolargraph.FlashFirmware:main"
 [project.urls]
 Homepage = "https://github.com/davidgrier/QPolargraph"
 Repository = "https://github.com/davidgrier/QPolargraph"
+Documentation = "https://qpolargraph.readthedocs.io"
 "Issue Tracker" = "https://github.com/davidgrier/QPolargraph/issues"
 
 # The project root IS the QPolargraph package — no src/ subdirectory.

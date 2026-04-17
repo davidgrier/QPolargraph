@@ -1,6 +1,7 @@
 # QPolargraph
 
 [![Tests](https://github.com/davidgrier/QPolargraph/actions/workflows/tests.yml/badge.svg)](https://github.com/davidgrier/QPolargraph/actions/workflows/tests.yml)
+[![Documentation](https://readthedocs.org/projects/qpolargraph/badge/?version=latest)](https://qpolargraph.readthedocs.io/en/latest/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)
 
