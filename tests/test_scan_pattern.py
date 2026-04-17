@@ -326,6 +326,61 @@ def test_tarzan_cycle_returns_none_when_geometry_invalid(tarzan):
     assert tarzan._cycle(p_near) is None
 
 
+# --- TarzanScan periodicity diagnostics ---
+
+def test_tarzan_B_is_zero_for_default_geometry(tarzan):
+    '''Default FakePolargraph geometry satisfies ell·width = height·(y_top+y_bottom).'''
+    assert tarzan.tarzan_B == pytest.approx(0., abs=1e-12)
+
+
+def test_tarzan_is_degenerate_for_default_geometry(tarzan):
+    assert tarzan.is_degenerate
+
+
+def test_tarzan_fixed_point_none_when_degenerate(tarzan):
+    assert tarzan.fixed_point is None
+
+
+def test_tarzan_B_nonzero_after_dy_change(pg):
+    t = TarzanScan(polargraph=pg)
+    t.dy = t.dy + 0.05  # shift scan area down → breaks B = 0
+    assert t.tarzan_B != pytest.approx(0., abs=1e-10)
+
+
+def test_tarzan_not_degenerate_after_dy_change(pg):
+    t = TarzanScan(polargraph=pg)
+    t.dy = t.dy + 0.05
+    assert not t.is_degenerate
+
+
+def test_tarzan_fixed_point_none_when_symmetric_nondegenerate(pg):
+    '''dx = 0 and B ≠ 0: no fixed point exists.'''
+    t = TarzanScan(polargraph=pg)
+    t.dy = t.dy + 0.05
+    assert t.dx == pytest.approx(0.)
+    assert t.fixed_point is None
+
+
+def test_tarzan_fixed_point_exists_when_asymmetric(pg):
+    '''dx ≠ 0 and B ≠ 0: a fixed point should be returned.'''
+    t = TarzanScan(polargraph=pg)
+    t.dy = t.dy + 0.05
+    t.dx = 0.05
+    fp = t.fixed_point
+    assert fp is not None
+    assert isinstance(fp, float)
+
+
+def test_tarzan_fixed_point_value_correct(pg):
+    '''Fixed point satisfies x0* = h + dx - B/(4·dx).'''
+    t = TarzanScan(polargraph=pg)
+    t.dy = t.dy + 0.05
+    t.dx = 0.05
+    h = pg.ell / 2.
+    expected = h + t.dx - t.tarzan_B / (4. * t.dx)
+    assert t.fixed_point == pytest.approx(expected, rel=1e-9)
+
+
 # --- home / center ---
 
 def test_home_moves_to_home_x(scan):

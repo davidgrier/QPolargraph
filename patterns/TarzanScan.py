@@ -26,6 +26,9 @@ x-position leaves the scan rectangle.
 
 from QPolargraph.patterns.QScanPattern import QScanPattern
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class TarzanScan(QScanPattern):
@@ -65,6 +68,60 @@ class TarzanScan(QScanPattern):
     @x0.setter
     def x0(self, value: float) -> None:
         self._x0 = float(value)
+
+    @property
+    def tarzan_B(self) -> float:
+        '''Key parameter of the Tarzan map [m²].
+
+        Defined as ``B = 4h·x_right + y_top² − y_bottom²`` where
+        ``h = ell/2``.  The Tarzan map ``T(x₀)`` has a closed form
+        involving only ``B`` and its partner
+        ``E = −B + 8h·dx``.
+
+        When ``B = 0`` the map is the identity and every orbit is
+        period-1 regardless of ``x0``; adjust ``dy`` or ``height``
+        until ``B ≠ 0``.
+        '''
+        if self.polargraph is None:
+            return 0.
+        x_left, y_top, x_right, y_bottom = self.rect()
+        h = self.polargraph.ell / 2.
+        return 4. * h * x_right + y_top**2 - y_bottom**2
+
+    @property
+    def is_degenerate(self) -> bool:
+        '''``True`` when the scan geometry produces a periodic Tarzan map.
+
+        Degeneracy (``B ≈ 0``) means every orbit is period-1: the scan
+        repeats the same path on every cycle regardless of ``x0``.
+        Increase or decrease ``dy`` (or change ``height``) to break the
+        degeneracy.
+        '''
+        if self.polargraph is None:
+            return False
+        scale = self.polargraph.ell * self.width
+        return abs(self.tarzan_B) < 1e-9 * scale
+
+    @property
+    def fixed_point(self) -> float | None:
+        '''Unique fixed point of the Tarzan map [m], or ``None``.
+
+        Returns ``x0* = h + dx − B / (4·dx)`` when ``B ≠ 0`` and
+        ``dx ≠ 0``.  Passing ``x0 = fixed_point`` produces a
+        period-1 orbit (identical repeated scans); avoid it.
+
+        Returns ``None`` in two cases:
+
+        * ``dx = 0`` and ``B ≠ 0``: no fixed points exist — any
+          ``x0`` yields an aperiodic scan.
+        * ``B = 0``: all ``x0`` are fixed points (degenerate geometry).
+        '''
+        if self.polargraph is None or self.is_degenerate:
+            return None
+        if abs(self.dx) < 1e-12:
+            return None
+        h = self.polargraph.ell / 2.
+        return h + self.dx - self.tarzan_B / (4. * self.dx)
 
     # ------------------------------------------------------------------
     # Internal geometry helpers
@@ -172,6 +229,12 @@ class TarzanScan(QScanPattern):
         '''
         if self.polargraph is None:
             return super().vertices()
+
+        if self.is_degenerate:
+            logger.warning(
+                'TarzanScan: degenerate geometry (B ≈ 0) — every cycle '
+                'repeats the same path. Adjust dy or height until '
+                'ell·width ≠ height·(y_top + y_bottom).')
 
         x_left, y_top, x_right, _ = self.rect()
         p = np.array([self._x0, y_top])
