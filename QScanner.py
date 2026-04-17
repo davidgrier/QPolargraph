@@ -1,6 +1,6 @@
 # TODO
-# add a "scan pattern" widget that allows the user to select and configure different scan patterns, and then have the scanner use the selected pattern for scanning.  This would allow users to easily switch between different scanning strategies without needing to subclass QScanner.
-# implement Tarzan scan.
+# add a "scan pattern" widget that allows the user to select and configure
+# different scan patterns from the GUI, without needing to subclass QScanner.
 # UI improvements
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ from QInstrument.lib.Configure import Configure
 from QPolargraph.hardware.QPolargraphWidget import QPolargraphWidget
 from QPolargraph.patterns.QScanPattern import QScanPattern
 from QPolargraph.patterns.PolarScan import PolarScan
+from QPolargraph.patterns.RasterScan import RasterScan
+from QPolargraph.patterns.TarzanScan import TarzanScan
 import pyqtgraph as pg
 import numpy as np
 import numpy.typing as npt
@@ -100,7 +102,8 @@ class QScanner(QtWidgets.QMainWindow):
             cls._UIPATH = Path(inspect.getfile(cls)).parent / cls.UIFILE
 
     def __init__(self, *args, configdir: str | None = None,
-                 fake: bool = False, **kwargs):
+                 fake: bool = False,
+                 pattern: type | None = None, **kwargs):
         self._configurePyqtgraph()
         super().__init__(*args, **kwargs)
         QPolargraphWidget._fake = fake
@@ -110,7 +113,7 @@ class QScanner(QtWidgets.QMainWindow):
         self._beltTimer = QtCore.QTimer(self)
         self._beltTimer.setInterval(33)  # ~30 Hz
         self._beltTimer.timeout.connect(self._updateBelt)
-        self.scanner.pattern = self.SCAN_PATTERN()
+        self.scanner.pattern = (pattern or self.SCAN_PATTERN)()
         self.scanner.pattern.polargraph = self.polargraph.device
         configdir = configdir or f'~/.{type(self).__name__}'
         self.config = Configure(configdir=configdir)
@@ -300,18 +303,36 @@ class QScanner(QtWidgets.QMainWindow):
             if __name__ == '__main__':
                 QMyScanner.example()
 
-        Accepts ``-f`` / ``--fake`` on the command line to force use of
-        the fake instrument even when real hardware is available.
+        Accepts the following command-line flags:
+
+        ``-f`` / ``--fake``
+            Force use of the fake instrument.
+        ``-r`` / ``--raster``
+            Use :class:`~QPolargraph.RasterScan.RasterScan`.
+        ``-p`` / ``--polar``
+            Use :class:`~QPolargraph.PolarScan.PolarScan` (default).
+        ``-t`` / ``--tarzan``
+            Use :class:`~QPolargraph.TarzanScan.TarzanScan`.
         '''
         import sys
         import argparse
         parser = argparse.ArgumentParser(description=cls.__name__)
         parser.add_argument('-f', '--fake', action='store_true',
                             help='use fake instrument')
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument('-r', '--raster', dest='pattern',
+                           action='store_const', const=RasterScan,
+                           help='raster scan pattern')
+        group.add_argument('-p', '--polar', dest='pattern',
+                           action='store_const', const=PolarScan,
+                           help='polar scan pattern (default)')
+        group.add_argument('-t', '--tarzan', dest='pattern',
+                           action='store_const', const=TarzanScan,
+                           help='Tarzan scan pattern')
         args, remaining = parser.parse_known_args()
         sys.argv = sys.argv[:1] + remaining
         pg.mkQApp(cls.__name__)
-        widget = cls(fake=args.fake)
+        widget = cls(fake=args.fake, pattern=args.pattern)
         widget.show()
         pg.exec()
 
