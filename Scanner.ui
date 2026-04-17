@@ -89,7 +89,7 @@
         <property name="bottomMargin">
          <number>1</number>
         </property>
-        <item>
+        <item stretch="0">
          <widget class="QGroupBox" name="polargraphBox">
           <property name="title">
            <string>Polargraph</string>
@@ -116,7 +116,7 @@
           </layout>
          </widget>
         </item>
-        <item>
+        <item stretch="1">
          <widget class="QGroupBox" name="scannerBox">
           <property name="title">
            <string>Scan setup</string>
