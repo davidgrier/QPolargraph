@@ -19,15 +19,15 @@ logger = logging.getLogger(__name__)
 
 
 class _ScanThread(QtCore.QThread):
-    '''Worker thread that runs a scan pattern without blocking the event loop.'''
+    '''Worker thread that runs a callable without blocking the event loop.'''
 
-    def __init__(self, pattern: QScanPattern,
+    def __init__(self, fn: callable,
                  parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
-        self._pattern = pattern
+        self._fn = fn
 
     def run(self) -> None:
-        self._pattern.scan()
+        self._fn()
 
 
 class QScanner(QtWidgets.QMainWindow):
@@ -150,8 +150,10 @@ class QScanner(QtWidgets.QMainWindow):
         self.polargraph.propertyChanged.connect(self.updatePlot)
         self.scanner.patternChanged.connect(self.updatePlot)
         self.scanner.pattern.dataReady.connect(self._onDataReady)
-        self.home.clicked.connect(self.scanner.pattern.home)
-        self.center.clicked.connect(self.scanner.pattern.center)
+        self.home.clicked.connect(
+            lambda: self._startMove(self.scanner.pattern.home))
+        self.center.clicked.connect(
+            lambda: self._startMove(self.scanner.pattern.center))
         self.actionSaveSettings.triggered.connect(self.saveSettings)
         self.actionRestoreSettings.triggered.connect(self.restoreSettings)
 
@@ -235,16 +237,29 @@ class QScanner(QtWidgets.QMainWindow):
         else:
             self.scanAborted()
 
+    def _startMove(self, fn: callable,
+                   on_finished: callable | None = None) -> None:
+        '''Run fn in a background thread with UI locked and belt timer active.'''
+        for name in self._SCAN_LOCKED:
+            getattr(self, name).setEnabled(False)
+        self._beltTimer.start()
+        self._scanThread = _ScanThread(fn, parent=self)
+        self._scanThread.finished.connect(on_finished or self._moveFinished)
+        self._scanThread.start()
+
+    @QtCore.Slot()
+    def _moveFinished(self) -> None:
+        self._beltTimer.stop()
+        for name in self._SCAN_LOCKED:
+            getattr(self, name).setEnabled(True)
+        self.plotBelt()
+
     @QtCore.Slot()
     def scanStarted(self) -> None:
         self.showStatus('Scanning...')
         self.scan.setText('Stop')
-        for name in self._SCAN_LOCKED:
-            getattr(self, name).setEnabled(False)
-        self._beltTimer.start()
-        self._scanThread = _ScanThread(self.scanner.pattern, parent=self)
-        self._scanThread.finished.connect(self.scanFinished)
-        self._scanThread.start()
+        self._startMove(self.scanner.pattern.scan,
+                        on_finished=self.scanFinished)
 
     @QtCore.Slot()
     def scanAborted(self) -> None:
