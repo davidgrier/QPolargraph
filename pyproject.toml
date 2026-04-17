@@ -40,6 +40,7 @@ dev = [
 
 [project.gui-scripts]
 qpolargraph = "QPolargraph.QScanner:QScanner.example"
+qpolargraph-flash = "QPolargraph.FlashFirmware:main"
 
 [project.urls]
 Homepage = "https://github.com/davidgrier/QPolargraph"

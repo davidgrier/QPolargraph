@@ -14,6 +14,7 @@ _lazy = {
     'QPolargraphWidget':  'QPolargraphWidget',
     'QScanPatternWidget': 'QScanPatternWidget',
     'QScanner':           'QScanner',
+    'FlashDialog':        'FlashFirmware',
     'QScanPattern':       'QScanPattern',
     'RasterScan':         'RasterScan',
     'PolarScan':          'PolarScan',

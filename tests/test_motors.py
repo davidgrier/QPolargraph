@@ -73,4 +73,4 @@ def test_close_does_not_raise(motors):
 
 
 def test_firmware_version():
-    assert FakeMotors.FIRMWARE_VERSION == '3.2.0'
+    assert FakeMotors.FIRMWARE_VERSION == '3.3.0'

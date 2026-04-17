@@ -177,3 +177,10 @@ git config core.hooksPath .githooks
 
 Work on this project at New York University is supported by the
 National Science Foundation of the United States under award number DMR-2104837.
+
+## References
+
+H. W. Gao, K. I. Mishra, A. Winters, S. Wolin, and D. G. Grier,
+"Flexible wide-field high-resolution scanning camera for continuous-wave acoustic holography,"
+*Review of Scientific Instruments* **89**, 114901 (2018).
+https://doi.org/10.1063/1.5053666

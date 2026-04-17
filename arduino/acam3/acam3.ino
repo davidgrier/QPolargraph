@@ -19,7 +19,7 @@
 #include <AccelStepper.h>
 #include <Adafruit_MotorShield.h>
 
-#define VERSION "acam3.2.0"
+#define VERSION "acam3.3.0"
 
 Adafruit_MotorShield AFMS(0x60);
 Adafruit_StepperMotor *motor1 = AFMS.getStepper(200, 1);
@@ -33,6 +33,7 @@ int len = 0;
 /* flags */
 bool command_ready = false;
 bool is_running = false;
+bool shield_ok = false;
 
 /* motor positions (steps) */
 long n1 = 0;
@@ -168,7 +169,8 @@ void parse_command() {
       release_motors();
       break;
     case 'Q':
-      Serial.println(VERSION);
+      Serial.print(VERSION);
+      Serial.println(shield_ok ? ":OK" : ":NOSHIELD");
       break;
     default:
       Serial.println(cmd);
@@ -185,7 +187,7 @@ void setup() {
   }
   Serial.setTimeout(100);
 
-  AFMS.begin();
+  shield_ok = AFMS.begin();
   stepper1.setMaxSpeed(1000.0);
   stepper2.setMaxSpeed(1000.0);
   stepper1.setCurrentPosition(0);

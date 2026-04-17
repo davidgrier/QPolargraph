@@ -1,16 +1,15 @@
 # TODO
-# is there a way to upload the arduino sketch?
-# document arduino and adafruit dependencies
-# cite relevant papers on polargraph scanning
 # add a "scan pattern" widget that allows the user to select and configure different scan patterns, and then have the scanner use the selected pattern for scanning.  This would allow users to easily switch between different scanning strategies without needing to subclass QScanner.
 # implement Tarzan scan.
 # UI improvements
 from pathlib import Path
-from qtpy import uic, QtCore, QtWidgets
+from qtpy import uic, QtCore, QtGui, QtWidgets
 from QInstrument.lib.Configure import Configure
+from QPolargraph.QScanPattern import QScanPattern
 from QPolargraph.PolarScan import PolarScan
 import pyqtgraph as pg
 import numpy as np
+import numpy.typing as npt
 import inspect
 import logging
 
@@ -21,7 +20,8 @@ logger = logging.getLogger(__name__)
 class _ScanThread(QtCore.QThread):
     '''Worker thread that runs a scan pattern without blocking the event loop.'''
 
-    def __init__(self, pattern, parent=None):
+    def __init__(self, pattern: QScanPattern,
+                 parent: QtWidgets.QWidget | None = None):
         super().__init__(parent)
         self._pattern = pattern
 
@@ -128,7 +128,7 @@ class QScanner(QtWidgets.QMainWindow):
         pg.setConfigOption('background', 'w')
         pg.setConfigOption('foreground', 'k')
 
-    def closeEvent(self, event) -> None:
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         logger.debug(f'Closing: {event.type()}')
         if self._scanThread is not None and self._scanThread.isRunning():
             self.scanner.pattern.interrupt()
@@ -196,7 +196,7 @@ class QScanner(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     @QtCore.Slot(object)
-    def plotBelt(self, data=None) -> None:
+    def plotBelt(self, data: np.ndarray | None = None) -> None:
         p = self.polargraph.device
         if data is not None:
             xp, yp = data[0], data[1]
@@ -206,7 +206,8 @@ class QScanner(QtWidgets.QMainWindow):
         y = [0, yp, 0]
         self.beltPlot.setData(x, y)
 
-    def plotData(self, x, y, hue) -> None:
+    def plotData(self, x: npt.ArrayLike, y: npt.ArrayLike,
+                 hue: npt.ArrayLike) -> None:
         '''Add scatter points to the data plot.
 
         Parameters

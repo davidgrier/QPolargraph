@@ -1,3 +1,48 @@
+'''Motors — serial abstraction for two Arduino-driven stepper motors.
+
+Hardware requirements
+---------------------
+Arduino
+    Any Arduino with a USB serial port and I2C support (Uno, Mega, etc.).
+    The board must be flashed with the ``acam3`` firmware bundled at
+    ``arduino/acam3/acam3.ino``.
+
+Adafruit Motor Shield v2
+    The shield (I2C address ``0x60``) must be seated on the Arduino.
+    It drives two stepper motors via the ``Adafruit_MotorShield`` library.
+    Standard 200-step-per-revolution motors are assumed.
+
+Arduino libraries
+    ``acam3.ino`` requires the following Arduino libraries:
+
+    - ``Adafruit Motor Shield V2 Library``
+    - ``AccelStepper``
+
+    :mod:`~QPolargraph.FlashFirmware` installs them automatically before
+    compiling.  To install manually via the Arduino IDE Library Manager
+    or ``arduino-cli``::
+
+        arduino-cli lib install "Adafruit Motor Shield V2 Library"
+        arduino-cli lib install "AccelStepper"
+
+Flashing the firmware
+---------------------
+Use the :mod:`~QPolargraph.FlashFirmware` module to detect an attached
+Arduino and upload ``acam3.ino`` without opening the Arduino IDE::
+
+    qpolargraph-flash
+
+Or from Python:
+
+.. code-block:: python
+
+    from QPolargraph.FlashFirmware import FlashDialog
+    FlashDialog().exec()
+
+See :mod:`QPolargraph.FlashFirmware` for integration into a
+``QMainWindow`` application via a menu action.
+'''
+
 from QInstrument.lib.QSerialInstrument import QSerialInstrument
 from qtpy import QtCore
 import numpy as np
@@ -77,10 +122,13 @@ class Motors(QSerialInstrument):
         self.registerMethod('release', self.release)
 
     def identify(self) -> bool:
-        '''Return ``True`` if the port responds with the expected acam3 version string.
+        '''Return ``True`` if the port responds with the expected acam3 version string
+        and the Adafruit Motor Shield is detected.
 
-        Waits 2 s after opening for the Arduino to reset, then sends
-        ``Q`` and checks that the response is ``acam{FIRMWARE_VERSION}``.
+        Waits 2 s after opening for the Arduino to reset, then sends ``Q``
+        and checks that the response is ``acam{FIRMWARE_VERSION}:OK``.
+        A response of ``acam{FIRMWARE_VERSION}:NOSHIELD`` indicates that the
+        Adafruit Motor Shield was not detected at I2C address ``0x60``.
         '''
         logger.info(f' Trying {self._interface.portName()}...')
         sleep(2)
@@ -88,15 +136,18 @@ class Motors(QSerialInstrument):
         logger.debug(f' Received: {res}')
         if 'acam' not in res:
             return False
-        result = parse('acam{:>}', res)
+        result = parse('acam{:>}:{:>}', res)
         if result is None:
             return False
-        fw_version = result[0]
+        fw_version, shield_status = result
         if fw_version != self.FIRMWARE_VERSION:
             logger.error(f' Arduino is running acam3 version {fw_version}')
             logger.error(f' Install version {self.FIRMWARE_VERSION}')
             return False
-        logger.info(f' Arduino running acam {fw_version}')
+        if shield_status != 'OK':
+            logger.error(' Adafruit Motor Shield not detected (I2C address 0x60)')
+            return False
+        logger.info(f' Arduino running acam {fw_version}, motor shield OK')
         return True
 
     def process(self, data: str) -> None:
