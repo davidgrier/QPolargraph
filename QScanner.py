@@ -113,6 +113,8 @@ class QScanner(QtWidgets.QMainWindow):
         self._beltTimer = QtCore.QTimer(self)
         self._beltTimer.setInterval(33)  # ~30 Hz
         self._beltTimer.timeout.connect(self._updateBelt)
+        self.splitter.setStretchFactor(0, 1)  # plot side expands
+        self.splitter.setStretchFactor(1, 0)  # controls side stays fixed
         self.scanner.pattern = (pattern or self.SCAN_PATTERN)()
         self.scanner.pattern.polargraph = self.polargraph.device
         configdir = configdir or f'~/.{type(self).__name__}'
