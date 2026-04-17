@@ -1,6 +1,25 @@
 Changelog
 =========
 
+1.1.0 (2026-04-17)
+------------------
+
+- Added ``TarzanScan``: geometry-native scan pattern where each move engages
+  exactly one motor; the payload swings on a circular arc along the natural
+  coordinate lines of the polargraph.
+- Added ``TarzanScan.tarzan_B``, ``is_degenerate``, and ``fixed_point``
+  properties that characterise the periodicity of the scan map.
+- Added ``-r`` / ``--raster``, ``-p`` / ``--polar``, and ``-t`` / ``--tarzan``
+  command-line flags to ``qpolargraph`` for selecting the scan pattern at
+  launch (default: polar).
+- Redesigned ``PolargraphWidget``: removed nested ``Configuration`` and
+  ``Belt Drive`` group boxes; all controls now in a compact flat grid with
+  right-aligned labels beside spinboxes.
+- Redesigned ``RasterScanWidget``: replaced label-above-spinbox layout with
+  the same label-beside-spinbox grid used by ``PolargraphWidget``.
+- Improved startup layout: plot panel maximised by default; scan setup panel
+  takes all spare vertical space in the controls column.
+
 1.0.2 (2026-04-17)
 ------------------
 
