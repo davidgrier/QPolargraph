@@ -7,17 +7,17 @@ except PackageNotFoundError:
     __version__ = None
 
 _lazy = {
-    'Motors':             'Motors',
-    'Polargraph':         'Polargraph',
-    'FakeMotors':         'fake',
-    'FakePolargraph':     'fake',
-    'QPolargraphWidget':  'QPolargraphWidget',
-    'QScanPatternWidget': 'QScanPatternWidget',
+    'Motors':             'hardware.Motors',
+    'Polargraph':         'hardware.Polargraph',
+    'FakeMotors':         'hardware.fake',
+    'FakePolargraph':     'hardware.fake',
+    'QPolargraphWidget':  'hardware.QPolargraphWidget',
+    'QScanPatternWidget': 'patterns.QScanPatternWidget',
     'QScanner':           'QScanner',
     'FlashDialog':        'FlashFirmware',
-    'QScanPattern':       'QScanPattern',
-    'RasterScan':         'RasterScan',
-    'PolarScan':          'PolarScan',
+    'QScanPattern':       'patterns.QScanPattern',
+    'RasterScan':         'patterns.RasterScan',
+    'PolarScan':          'patterns.PolarScan',
 }
 
 

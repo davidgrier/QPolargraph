@@ -1,4 +1,4 @@
-from QPolargraph.Motors import Motors
+from QPolargraph.hardware.Motors import Motors
 import numpy as np
 import logging
 
@@ -212,7 +212,7 @@ def main():
     polargraph = Polargraph().find()
     if not polargraph.isOpen():
         print('No Polargraph found. Using FakePolargraph.')
-        from QPolargraph.fake import FakePolargraph
+        from QPolargraph.hardware.fake import FakePolargraph
         polargraph = FakePolargraph()
     print(f'Current position: {polargraph.indexes}')
     polargraph.moveTo(0.0, 100)

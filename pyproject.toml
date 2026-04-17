@@ -52,6 +52,8 @@ Repository = "https://github.com/davidgrier/QPolargraph"
 package-dir = {"QPolargraph" = "."}
 packages = [
     "QPolargraph",
+    "QPolargraph.hardware",
+    "QPolargraph.patterns",
 ]
 
 [tool.setuptools.package-data]

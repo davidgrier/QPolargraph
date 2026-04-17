@@ -5,8 +5,8 @@
 from pathlib import Path
 from qtpy import uic, QtCore, QtGui, QtWidgets
 from QInstrument.lib.Configure import Configure
-from QPolargraph.QScanPattern import QScanPattern
-from QPolargraph.PolarScan import PolarScan
+from QPolargraph.patterns.QScanPattern import QScanPattern
+from QPolargraph.patterns.PolarScan import PolarScan
 import pyqtgraph as pg
 import numpy as np
 import numpy.typing as npt

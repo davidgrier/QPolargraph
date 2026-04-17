@@ -1,4 +1,4 @@
-from QPolargraph.QScanPattern import QScanPattern
+from QPolargraph.patterns.QScanPattern import QScanPattern
 import numpy as np
 
 

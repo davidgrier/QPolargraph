@@ -1,5 +1,5 @@
 from QInstrument.lib.QInstrumentWidget import QInstrumentWidget
-from QPolargraph.Polargraph import Polargraph
+from QPolargraph.hardware.Polargraph import Polargraph
 
 
 class QPolargraphWidget(QInstrumentWidget):

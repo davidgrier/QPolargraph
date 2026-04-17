@@ -1,7 +1,7 @@
 import pytest
-from QPolargraph.QScanPatternWidget import QScanPatternWidget
-from QPolargraph.RasterScan import RasterScan
-from QPolargraph.PolarScan import PolarScan
+from QPolargraph.patterns.QScanPatternWidget import QScanPatternWidget
+from QPolargraph.patterns.RasterScan import RasterScan
+from QPolargraph.patterns.PolarScan import PolarScan
 
 
 @pytest.fixture

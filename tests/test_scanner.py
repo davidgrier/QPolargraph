@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 from QPolargraph.QScanner import QScanner
-from QPolargraph.PolarScan import PolarScan
-from QPolargraph.RasterScan import RasterScan
+from QPolargraph.patterns.PolarScan import PolarScan
+from QPolargraph.patterns.RasterScan import RasterScan
 
 
 @pytest.fixture

@@ -1,8 +1,8 @@
 import time
 from collections import deque
 from QInstrument.lib.QFakeInstrument import QFakeInstrument
-from QPolargraph.Motors import Motors
-from QPolargraph.Polargraph import Polargraph
+from QPolargraph.hardware.Motors import Motors
+from QPolargraph.hardware.Polargraph import Polargraph
 import numpy as np
 import logging
 

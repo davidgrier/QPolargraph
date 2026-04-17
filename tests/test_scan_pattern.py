@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
-from QPolargraph.fake import FakePolargraph
-from QPolargraph.QScanPattern import QScanPattern
-from QPolargraph.RasterScan import RasterScan
-from QPolargraph.PolarScan import PolarScan
+from QPolargraph.hardware.fake import FakePolargraph
+from QPolargraph.patterns.QScanPattern import QScanPattern
+from QPolargraph.patterns.RasterScan import RasterScan
+from QPolargraph.patterns.PolarScan import PolarScan
 
 
 @pytest.fixture

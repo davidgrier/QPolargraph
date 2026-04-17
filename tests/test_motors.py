@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from QPolargraph.fake import FakeMotors
+from QPolargraph.hardware.fake import FakeMotors
 
 
 @pytest.fixture

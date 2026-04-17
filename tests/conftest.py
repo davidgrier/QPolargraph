@@ -1,5 +1,5 @@
 import pytest
-from QPolargraph.fake import FakePolargraph
+from QPolargraph.hardware.fake import FakePolargraph
 
 
 @pytest.fixture(scope='session', autouse=True)

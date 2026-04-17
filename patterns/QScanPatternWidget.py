@@ -2,7 +2,7 @@ from pathlib import Path
 import inspect
 from qtpy import QtCore, QtWidgets
 from qtpy import uic
-from QPolargraph.PolarScan import PolarScan
+from QPolargraph.patterns.PolarScan import PolarScan
 
 
 class QScanPatternWidget(QtWidgets.QWidget):

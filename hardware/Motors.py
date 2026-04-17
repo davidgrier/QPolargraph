@@ -57,7 +57,7 @@ logger = logging.getLogger(__name__)
 
 
 def _firmware_version() -> str:
-    ino = Path(__file__).parent / 'arduino' / 'acam3' / 'acam3.ino'
+    ino = Path(__file__).parent.parent / 'arduino' / 'acam3' / 'acam3.ino'
     pattern = re.compile(r'#define\s+VERSION\s+"acam(\S+)"')
     with ino.open() as f:
         for line in f:
@@ -251,7 +251,7 @@ def main():
     motors = Motors().find()
     if not motors.isOpen():
         print('No Motors found. Using FakeMotors.')
-        from QPolargraph.fake import FakeMotors
+        from QPolargraph.hardware.fake import FakeMotors
         motors = FakeMotors()
     print(f'Current position: {motors.indexes}')
     motors.goto(100, 50)
