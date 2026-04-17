@@ -5,6 +5,7 @@
 from pathlib import Path
 from qtpy import uic, QtCore, QtGui, QtWidgets
 from QInstrument.lib.Configure import Configure
+from QPolargraph.hardware.QPolargraphWidget import QPolargraphWidget
 from QPolargraph.patterns.QScanPattern import QScanPattern
 from QPolargraph.patterns.PolarScan import PolarScan
 import pyqtgraph as pg
@@ -110,10 +111,9 @@ class QScanner(QtWidgets.QMainWindow):
                  fake: bool = False, **kwargs):
         self._configurePyqtgraph()
         super().__init__(*args, **kwargs)
+        QPolargraphWidget._fake = fake
         uic.loadUi(self._UIPATH, self)
-        if fake:
-            self.polargraph.device.close()
-            self.polargraph.device = self.polargraph._fakeCls()()
+        QPolargraphWidget._fake = False
         self._scanThread = None
         self._latestPosition: np.ndarray | None = None
         self._beltTimer = QtCore.QTimer(self)
