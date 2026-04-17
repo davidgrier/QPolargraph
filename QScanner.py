@@ -2,6 +2,8 @@
 # add a "scan pattern" widget that allows the user to select and configure different scan patterns, and then have the scanner use the selected pattern for scanning.  This would allow users to easily switch between different scanning strategies without needing to subclass QScanner.
 # implement Tarzan scan.
 # UI improvements
+from __future__ import annotations
+
 from pathlib import Path
 from qtpy import uic, QtCore, QtGui, QtWidgets
 from QInstrument.lib.Configure import Configure
