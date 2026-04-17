@@ -48,6 +48,8 @@ window.  The import can be deferred to the slot so that ``FlashFirmware``
 is only loaded when the user triggers the action.
 '''
 
+from __future__ import annotations
+
 import json
 import re
 import subprocess

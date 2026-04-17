@@ -47,11 +47,11 @@ class Polargraph(Motors):
 
     References
     ----------
-    .. [1] H. W. Gao, K. I. Mishra, A. Winters, S. Wolin, and D. G. Grier,
-       "Flexible wide-field high-resolution scanning camera for
-       continuous-wave acoustic holography,"
-       *Rev. Sci. Instrum.* **89**, 114901 (2018).
-       https://doi.org/10.1063/1.5053666
+    H. W. Gao, K. I. Mishra, A. Winters, S. Wolin, and D. G. Grier,
+    "Flexible wide-field high-resolution scanning camera for
+    continuous-wave acoustic holography,"
+    *Rev. Sci. Instrum.* **89**, 114901 (2018).
+    https://doi.org/10.1063/1.5053666
     '''
 
     def __init__(self,
