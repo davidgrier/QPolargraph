@@ -139,3 +139,72 @@ def test_polar_trajectory_lengths_match(polar):
     x, y = polar.trajectory()
     assert len(x) == len(y)
     assert len(x) > 0
+
+
+# --- home / center ---
+
+def test_home_moves_to_home_x(scan):
+    scan.home()
+    x, _, _ = scan.polargraph.position
+    assert x == pytest.approx(0.0)
+
+
+def test_home_moves_to_home_y(scan):
+    scan.home()
+    _, y, _ = scan.polargraph.position
+    assert y == pytest.approx(scan.polargraph.y0)
+
+
+def test_center_moves_to_dx(scan):
+    scan.center()
+    x, _, _ = scan.polargraph.position
+    assert x == pytest.approx(scan.dx)
+
+
+def test_center_moves_to_scan_midpoint(scan):
+    scan.center()
+    _, y, _ = scan.polargraph.position
+    expected = scan.polargraph.y0 + scan.dy + scan.height / 2.
+    assert y == pytest.approx(expected, abs=scan.polargraph.ds)
+
+
+# --- moveTo return value / interrupt ---
+
+def test_moveto_returns_true_on_completion(scan):
+    assert scan.moveTo([[0.1, 0.3]]) is True
+
+
+def test_interrupt_causes_moveto_to_return_false(scan):
+    scan.interrupt()
+    assert scan.moveTo([[0.1, 0.3]]) is False
+
+
+def test_interrupt_resets_after_moveto(scan):
+    scan.interrupt()
+    scan.moveTo([[0.1, 0.3]])
+    assert scan.moveTo([[0.0, 0.2]]) is True
+
+
+# --- scan / scanning ---
+
+def test_not_scanning_before_scan(scan):
+    assert not scan.scanning()
+
+
+def test_scan_emits_scan_finished(scan, qtbot):
+    with qtbot.waitSignal(scan.scanFinished, timeout=5000):
+        scan.scan()
+
+
+def test_scan_emits_data_ready(scan, qtbot):
+    received = []
+    scan.dataReady.connect(received.append)
+    scan.scan()
+    assert len(received) > 0
+
+
+def test_scan_returns_home_after_completion(scan):
+    scan.scan()
+    x, y, _ = scan.polargraph.position
+    assert x == pytest.approx(0.0)
+    assert y == pytest.approx(scan.polargraph.y0)

@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from QPolargraph.QScanner import QScanner
+from QPolargraph.hardware.fake import FakePolargraph
 from QPolargraph.patterns.PolarScan import PolarScan
 from QPolargraph.patterns.RasterScan import RasterScan
 
@@ -8,6 +9,14 @@ from QPolargraph.patterns.RasterScan import RasterScan
 @pytest.fixture
 def scanner(qtbot, tmp_path):
     w = QScanner(configdir=str(tmp_path / 'config'))
+    qtbot.addWidget(w)
+    return w
+
+
+@pytest.fixture
+def fake_scanner(qtbot, tmp_path):
+    w = QScanner(fake=True, configdir=str(tmp_path / 'config'))
+    w.scanner.pattern.polargraph.step_delay = 0.
     qtbot.addWidget(w)
     return w
 
@@ -95,3 +104,64 @@ def test_save_sets_status(scanner):
 def test_restore_sets_status(scanner):
     scanner.restoreSettings()
     assert 'restored' in scanner.statusBar().currentMessage().lower()
+
+
+# --- fake=True constructor ---
+
+def test_fake_scanner_uses_fake_polargraph(fake_scanner):
+    assert isinstance(fake_scanner.polargraph.device, FakePolargraph)
+
+
+# --- scan lifecycle ---
+
+def test_scan_started_changes_button_text(fake_scanner, qtbot):
+    fake_scanner.scanStarted()
+    assert fake_scanner.scan.text() == 'Stop'
+    qtbot.waitUntil(lambda: fake_scanner.scan.text() == 'Scan', timeout=5000)
+
+
+def test_scan_controls_disabled_while_scanning(fake_scanner, qtbot):
+    fake_scanner.scanStarted()
+    assert not fake_scanner.center.isEnabled()
+    qtbot.waitUntil(lambda: fake_scanner.center.isEnabled(), timeout=5000)
+
+
+def test_scan_finished_restores_button(fake_scanner, qtbot):
+    fake_scanner.scanStarted()
+    qtbot.waitUntil(lambda: fake_scanner.scan.text() == 'Scan', timeout=5000)
+
+
+def test_scan_finished_restores_controls(fake_scanner, qtbot):
+    fake_scanner.scanStarted()
+    qtbot.waitUntil(lambda: fake_scanner.center.isEnabled(), timeout=5000)
+    assert fake_scanner.home.isEnabled()
+    assert fake_scanner.polargraph.isEnabled()
+    assert fake_scanner.scanner.isEnabled()
+
+
+def test_scan_finished_shows_status(fake_scanner, qtbot):
+    fake_scanner.scanStarted()
+    qtbot.waitUntil(
+        lambda: 'complete' in fake_scanner.statusBar().currentMessage().lower(),
+        timeout=5000)
+
+
+def test_scan_aborted_sets_button_text(fake_scanner, qtbot):
+    fake_scanner.scanStarted()
+    fake_scanner.scanAborted()
+    assert fake_scanner.scan.text() == 'Stopping'
+    qtbot.waitUntil(lambda: fake_scanner.scan.text() == 'Scan', timeout=5000)
+
+
+# --- _startMove (Home / Center) ---
+
+def test_home_disables_controls(fake_scanner, qtbot):
+    fake_scanner._startMove(fake_scanner.scanner.pattern.home)
+    assert not fake_scanner.center.isEnabled()
+    qtbot.waitUntil(lambda: fake_scanner.center.isEnabled(), timeout=5000)
+
+
+def test_center_disables_controls(fake_scanner, qtbot):
+    fake_scanner._startMove(fake_scanner.scanner.pattern.center)
+    assert not fake_scanner.home.isEnabled()
+    qtbot.waitUntil(lambda: fake_scanner.home.isEnabled(), timeout=5000)
