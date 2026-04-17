@@ -63,6 +63,20 @@ def test_i2r_roundtrip(pg):
     assert y == pytest.approx(yt, abs=pg.ds)
 
 
+def test_r2i_at_home(pg):
+    m, n = pg.r2i(0., pg.y0)
+    assert m == pytest.approx(0., abs=1e-9)
+    assert n == pytest.approx(0., abs=1e-9)
+
+
+def test_r2i_i2r_roundtrip(pg):
+    xt, yt = 0.1, 0.35
+    m, n = pg.r2i(xt, yt)
+    x, y, _ = pg.i2r([m, n, 0])
+    assert x == pytest.approx(xt, abs=1e-9)
+    assert y == pytest.approx(yt, abs=1e-9)
+
+
 def test_position_at_home(pg):
     x, y, _ = pg.position
     assert x == pytest.approx(0.0)

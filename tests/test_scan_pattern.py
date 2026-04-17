@@ -88,10 +88,45 @@ def test_raster_trajectory_shape(raster):
     assert t.shape[0] == 2
 
 
-def test_raster_trajectory_matches_vertices(raster):
+def test_raster_trajectory_has_more_points_than_vertices(raster):
     v = raster.vertices()
     t = raster.trajectory()
-    assert t.shape[1] == v.shape[0]
+    assert t.shape[1] > v.shape[0]
+
+
+def test_raster_trajectory_starts_at_first_vertex(raster):
+    v = raster.vertices()
+    t = raster.trajectory()
+    assert t[0, 0] == pytest.approx(v[0, 0], abs=1e-6)
+    assert t[1, 0] == pytest.approx(v[0, 1], abs=1e-6)
+
+
+def test_raster_trajectory_ends_at_last_vertex(raster):
+    v = raster.vertices()
+    t = raster.trajectory()
+    assert t[0, -1] == pytest.approx(v[-1, 0], abs=1e-6)
+    assert t[1, -1] == pytest.approx(v[-1, 1], abs=1e-6)
+
+
+def test_raster_trajectory_is_curved(raster):
+    '''Trajectory points between two endpoints are not collinear.'''
+    t = raster.trajectory()
+    # Take first segment: check that intermediate points deviate from
+    # the straight line joining the first and last points of that segment.
+    n = raster._TRAJECTORY_PTS
+    x0, y0 = t[0, 0], t[1, 0]
+    x1, y1 = t[0, n - 1], t[1, n - 1]
+    # Midpoint on the straight line
+    xm_line = (x0 + x1) / 2.
+    ym_line = (y0 + y1) / 2.
+    # Actual midpoint of the trajectory
+    mid = n // 2
+    xm_actual = t[0, mid]
+    ym_actual = t[1, mid]
+    deviation = np.hypot(xm_actual - xm_line, ym_actual - ym_line)
+    assert deviation > 1e-6
+
+
 
 
 # --- PolarScan ---

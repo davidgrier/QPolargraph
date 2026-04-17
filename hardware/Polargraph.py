@@ -143,6 +143,29 @@ class Polargraph(Motors):
         '''Belt length from pulley to payload at the home position [m].'''
         return np.sqrt((self.ell / 2.) ** 2 + self.y0 ** 2)
 
+    def r2i(self, x: float, y: float) -> tuple:
+        '''Convert Cartesian coordinates to continuous step indexes.
+
+        This is the exact (non-rounded) inverse of :meth:`i2r`, useful
+        for trajectory interpolation.  To obtain integer motor targets
+        suitable for :meth:`goto`, round the result.
+
+        Parameters
+        ----------
+        x : float
+            Horizontal coordinate [m].
+        y : float
+            Vertical coordinate [m].
+
+        Returns
+        -------
+        tuple
+            ``(m, n)`` step indexes as floats.
+        '''
+        sm = np.sqrt((self.ell / 2. + x) ** 2 + y ** 2)
+        sn = np.sqrt((self.ell / 2. - x) ** 2 + y ** 2)
+        return (sm - self.s0) / self.ds, (self.s0 - sn) / self.ds
+
     def i2r(self, indexes) -> np.ndarray:
         '''Convert motor step indexes to Cartesian coordinates [m].
 
