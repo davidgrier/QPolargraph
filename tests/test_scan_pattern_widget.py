@@ -1,7 +1,9 @@
 import pytest
 from QPolargraph.patterns.QScanPatternWidget import QScanPatternWidget
+from QPolargraph.patterns.TarzanScanWidget import TarzanScanWidget
 from QPolargraph.patterns.RasterScan import RasterScan
 from QPolargraph.patterns.PolarScan import PolarScan
+from QPolargraph.patterns.TarzanScan import TarzanScan
 
 
 @pytest.fixture
@@ -63,3 +65,52 @@ def test_settings_setter_updates_spinboxes_and_pattern(widget):
 
 def test_settings_setter_ignores_unknown_keys(widget):
     widget.settings = {'unknown_key': 99.0}  # should not raise
+
+
+# --- TarzanScanWidget ---
+
+@pytest.fixture
+def tarzan_widget(qtbot):
+    w = TarzanScanWidget()
+    qtbot.addWidget(w)
+    return w
+
+
+def test_tarzan_default_pattern_type(tarzan_widget):
+    assert isinstance(tarzan_widget.pattern, TarzanScan)
+
+
+def test_tarzan_x0_spinbox_initialized(tarzan_widget):
+    assert tarzan_widget.x0.value() == pytest.approx(tarzan_widget.pattern.x0)
+
+
+def test_tarzan_x0_spinbox_updates_pattern(tarzan_widget):
+    tarzan_widget.x0.setValue(0.05)
+    assert tarzan_widget.pattern.x0 == pytest.approx(0.05)
+
+
+def test_tarzan_pattern_x0_syncs_to_spinbox(tarzan_widget):
+    t = TarzanScan()
+    t.x0 = 0.07
+    tarzan_widget.pattern = t
+    assert tarzan_widget.x0.value() == pytest.approx(0.07)
+
+
+def test_tarzan_settings_includes_x0(tarzan_widget):
+    assert 'x0' in tarzan_widget.settings
+
+
+def test_tarzan_settings_x0_matches_pattern(tarzan_widget):
+    tarzan_widget.x0.setValue(0.03)
+    assert tarzan_widget.settings['x0'] == pytest.approx(0.03)
+
+
+def test_tarzan_settings_setter_restores_x0(tarzan_widget):
+    tarzan_widget.settings = {'x0': 0.04}
+    assert tarzan_widget.x0.value() == pytest.approx(0.04)
+    assert tarzan_widget.pattern.x0 == pytest.approx(0.04)
+
+
+def test_tarzan_pattern_changed_emitted_on_x0_change(tarzan_widget, qtbot):
+    with qtbot.waitSignal(tarzan_widget.patternChanged, timeout=1000):
+        tarzan_widget.x0.setValue(tarzan_widget.x0.value() + 0.01)

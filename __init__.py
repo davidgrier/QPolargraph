@@ -13,11 +13,13 @@ _lazy = {
     'FakePolargraph':     'hardware.fake',
     'QPolargraphWidget':  'hardware.QPolargraphWidget',
     'QScanPatternWidget': 'patterns.QScanPatternWidget',
+    'TarzanScanWidget':   'patterns.TarzanScanWidget',
     'QScanner':           'QScanner',
     'FlashDialog':        'FlashFirmware',
     'QScanPattern':       'patterns.QScanPattern',
     'RasterScan':         'patterns.RasterScan',
     'PolarScan':          'patterns.PolarScan',
+    'TarzanScan':         'patterns.TarzanScan',
 }
 
 
