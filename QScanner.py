@@ -210,7 +210,8 @@ class QScanner(QtWidgets.QMainWindow):
         self.beltPlot.setData(x, y)
 
     def plotData(self, x: npt.ArrayLike, y: npt.ArrayLike,
-                 hue: npt.ArrayLike) -> None:
+                 hue: npt.ArrayLike,
+                 value: npt.ArrayLike = 1.0) -> None:
         '''Add scatter points to the data plot.
 
         Parameters
@@ -221,10 +222,14 @@ class QScanner(QtWidgets.QMainWindow):
             Vertical coordinates [m].
         hue : array-like
             Color values in ``[0, 1]`` (HSV hue).
+        value : array-like, optional
+            Brightness values in ``[0, 1]`` (HSV value).  Default: 1.0.
         '''
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)
-        brush = [pg.hsvColor(h) for h in np.atleast_1d(hue)]
+        hue = np.atleast_1d(hue)
+        value = np.broadcast_to(np.atleast_1d(value), hue.shape)
+        brush = [pg.hsvColor(h, v=v) for h, v in zip(hue, value)]
         self.dataPlot.addPoints(x, y, brush=brush)
 
     @QtCore.Slot()

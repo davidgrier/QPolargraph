@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.2.2 (2026-04-18)
+------------------
+
+- ``QScanner.plotData``: added optional ``value`` parameter (HSV brightness,
+  default ``1.0``) so subclasses can encode a second scalar quantity as
+  point brightness without changing existing behavior.
+
 1.2.1 (2026-04-18)
 ------------------
 
