@@ -21,7 +21,7 @@ class PolarScan(QScanPattern):
             of the scan rectangle.
         '''
         L = self.polargraph.ell / 2
-        x1, y1, x2, y2 = self.rect()
+        x1, y1, x2, y2 = self.rect
         rmin = np.hypot(x1 + L, y1)
         rmax = np.hypot(x2 + L, y2)
         return np.arange(rmin, rmax, self.step * 1e-3)
@@ -40,7 +40,7 @@ class PolarScan(QScanPattern):
             ``[start, end]`` intersection points ``[x, y]`` [m].
         '''
         p = -self.polargraph.ell / 2
-        x1, y1, x2, y2 = self.rect()
+        x1, y1, x2, y2 = self.rect
         x1 -= p
         x2 -= p
 

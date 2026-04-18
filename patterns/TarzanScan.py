@@ -84,7 +84,7 @@ class TarzanScan(QScanPattern):
         '''
         if self.polargraph is None:
             return 0.
-        x_left, y_top, x_right, y_bottom = self.rect()
+        x_left, y_top, x_right, y_bottom = self.rect
         h = self.polargraph.ell / 2.
         return 4. * h * x_right + y_top**2 - y_bottom**2
 
@@ -148,7 +148,7 @@ class TarzanScan(QScanPattern):
             Returns ``None`` if any arc fails to reach its target boundary
             (scan geometry is incompatible with a full cycle from this point).
         '''
-        x_left, y_top, x_right, y_bottom = self.rect()
+        x_left, y_top, x_right, y_bottom = self.rect
         L, R = self._pulley_positions()
 
         # Segment 1: arc around R (right pulley), top edge → right edge
@@ -236,7 +236,7 @@ class TarzanScan(QScanPattern):
                 'repeats the same path. Adjust dy or height until '
                 'ell·width ≠ height·(y_top + y_bottom).')
 
-        x_left, y_top, x_right, _ = self.rect()
+        x_left, y_top, x_right, _ = self.rect
         p = np.array([self._x0, y_top])
         pts = [p.copy()]
 

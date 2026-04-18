@@ -19,7 +19,7 @@ class RasterScan(QScanPattern):
         numpy.ndarray
             ``(nvertices, 2)`` array of ``(x, y)`` waypoints [m].
         '''
-        x1, y1, x2, y2 = self.rect()
+        x1, y1, x2, y2 = self.rect
         x = np.arange(x1, x2, self.step * 1e-3)
         y = np.full_like(x, y1)
         y[1::2] = y2

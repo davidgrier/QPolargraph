@@ -1,6 +1,15 @@
 Changelog
 =========
 
+1.2.1 (2026-04-18)
+------------------
+
+- ``QScanPattern.rect``: converted from a plain method to a ``@property``
+  so that callers can write ``pattern.rect`` consistently with other
+  geometric properties (``width``, ``height``, ``step``, etc.).
+  Updated all internal callers in ``PolarScan``, ``RasterScan``, and
+  ``TarzanScan``.
+
 1.2.0 (2026-04-18)
 ------------------
 

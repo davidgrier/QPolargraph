@@ -147,8 +147,9 @@ class QScanPattern(QtCore.QObject):
         '''Return ``True`` — scan patterns are always available.'''
         return True
 
+    @property
     def rect(self) -> list:
-        '''Return the bounding rectangle ``[x1, y1, x2, y2]`` [m].'''
+        '''Bounding rectangle ``[x1, y1, x2, y2]`` of the scan area [m].'''
         x1 = self.dx - self.width / 2.
         y1 = self.polargraph.y0 + self.dy
         x2 = x1 + self.width
@@ -163,7 +164,7 @@ class QScanPattern(QtCore.QObject):
         numpy.ndarray
             ``(nvertices, 2)`` array of ``(x, y)`` waypoints [m].
         '''
-        x1, y1, x2, y2 = self.rect()
+        x1, y1, x2, y2 = self.rect
         return np.array([[x1, y1], [x2, y1], [x2, y2], [x1, y2], [x1, y1]])
 
     def trajectory(self) -> np.ndarray:
