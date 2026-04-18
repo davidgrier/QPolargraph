@@ -1,6 +1,25 @@
 Changelog
 =========
 
+1.2.0 (2026-04-18)
+------------------
+
+- ``QScanPattern``: replaced ``_moving`` / ``_scanning`` bool flags with a
+  ``ScanState`` enum (``IDLE``, ``MOVING``, ``SCANNING``).  Added
+  ``moving()`` predicate and updated ``scanning()`` to use the enum.
+- ``QScanPattern``: added ``closeRequested`` signal, emitted (via
+  ``_setIdle()``) when the state returns to IDLE after
+  ``interruptAndClose()`` was called.
+- ``QScanPattern.home`` / ``center``: set state to MOVING before the move
+  and call ``_setIdle()`` on completion.
+- ``QScanPattern.scan``: full state-machine transitions
+  IDLE→MOVING→SCANNING→MOVING→IDLE; skips home only on close-interrupt.
+- ``QScanner.closeEvent``: use ``moving()`` (not ``scanning()``) and
+  ``interruptAndClose()``; drop the 100 ms timer — ``closeRequested``
+  triggers ``close()`` via a ``QueuedConnection`` when motion stops.
+- ``QScanner.toggleScan``: use ``moving()`` so Stop works during the
+  initial positioning move, not only during active data collection.
+
 1.1.7 (2026-04-18)
 ------------------
 

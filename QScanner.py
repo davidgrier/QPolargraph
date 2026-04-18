@@ -128,10 +128,9 @@ class QScanner(QtWidgets.QMainWindow):
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         logger.debug(f'Closing: {event.type()}')
-        if self.scanner.pattern.scanning():
+        if self.scanner.pattern.moving():
             self.scanner.pattern.interruptAndClose()
             event.ignore()
-            QtCore.QTimer.singleShot(100, self.close)
             return
         self.saveSettings()
         self.polargraph.device.close()
@@ -146,6 +145,8 @@ class QScanner(QtWidgets.QMainWindow):
         self.polargraph.propertyChanged.connect(self.updatePlot)
         self.scanner.patternChanged.connect(self.updatePlot)
         self.scanner.pattern.dataReady.connect(self._onDataReady)
+        self.scanner.pattern.closeRequested.connect(
+            self.close, QtCore.Qt.ConnectionType.QueuedConnection)
         self.home.clicked.connect(
             lambda: self._startMove(self.scanner.pattern.home))
         self.center.clicked.connect(
@@ -228,7 +229,7 @@ class QScanner(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def toggleScan(self) -> None:
-        if not self.scanner.pattern.scanning():
+        if not self.scanner.pattern.moving():
             self.scanStarted()
         else:
             self.scanAborted()
