@@ -1,6 +1,16 @@
 Changelog
 =========
 
+1.1.7 (2026-04-18)
+------------------
+
+- ``QScanPattern``: added ``interruptAndClose()`` method that sets a new
+  ``_closing`` flag in addition to ``_interrupt``.  ``scan()`` now skips
+  ``home()`` only when ``_closing`` is set (window-close path), preserving
+  the original behavior of returning home after a normal Stop.
+- ``QScanner.closeEvent``: call ``interruptAndClose()`` instead of
+  ``interrupt()`` so Stop still goes home but window-close does not hang.
+
 1.1.6 (2026-04-18)
 ------------------
 

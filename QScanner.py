@@ -129,7 +129,7 @@ class QScanner(QtWidgets.QMainWindow):
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         logger.debug(f'Closing: {event.type()}')
         if self.scanner.pattern.scanning():
-            self.scanner.pattern.interrupt()
+            self.scanner.pattern.interruptAndClose()
             event.ignore()
             QtCore.QTimer.singleShot(100, self.close)
             return

@@ -67,6 +67,7 @@ class QScanPattern(QtCore.QObject):
         self._moving = False
         self._scanning = False
         self._interrupt = False
+        self._closing = False
 
     @property
     def width(self) -> float:
@@ -160,15 +161,21 @@ class QScanPattern(QtCore.QObject):
 
     @QtCore.Slot()
     def scan(self) -> None:
-        '''Execute a full scan, then return to home.'''
+        '''Execute a full scan, then return to home.
+
+        Returns home after completion or after a normal stop.  Skips home
+        only when interrupted by a window-close request
+        (see :meth:`interruptAndClose`).
+        '''
         if not self._moving:
             vertices = self.vertices()
             self._scanning = True
             if self.moveTo([vertices[0, :]]):
                 interrupted = not self.moveTo(vertices[1:, :])
-                if not interrupted:
+                if not (interrupted and self._closing):
                     self.home()
             self._scanning = False
+            self._closing = False
             self.scanFinished.emit()
         else:
             self.interrupt()
@@ -216,5 +223,19 @@ class QScanPattern(QtCore.QObject):
 
     @QtCore.Slot()
     def interrupt(self) -> None:
-        '''Request that the current scan or move be aborted.'''
+        '''Request that the current scan or move be aborted.
+
+        After stopping, the scanner returns to the home position.
+        To stop without going home (e.g. on application close),
+        use :meth:`interruptAndClose` instead.
+        '''
+        self._interrupt = True
+
+    def interruptAndClose(self) -> None:
+        '''Interrupt the current scan without returning home.
+
+        Used by the application close handler to stop motion cleanly
+        without blocking on a home move before shutdown.
+        '''
+        self._closing = True
         self._interrupt = True
