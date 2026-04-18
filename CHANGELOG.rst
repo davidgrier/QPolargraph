@@ -1,6 +1,18 @@
 Changelog
 =========
 
+1.1.1 (2026-04-17)
+------------------
+
+- Refactored ``FlashFirmware``: imports ``FIRMWARE_VERSION`` from
+  ``Motors`` instead of duplicating ``_firmware_version()``.
+- Fixed ``PolarScan.trajectory()``: now returns ``np.ndarray`` with
+  shape ``(2, n)`` consistent with all other scan patterns.
+- Refactored ``QScanPatternWidget``: extracted ``_FIELDS`` class
+  constant; added type hints.
+- Refactored ``QScanPattern``: ``polargraph`` parameter now annotated
+  ``Polargraph | None`` via ``TYPE_CHECKING`` guard.
+
 1.1.0 (2026-04-17)
 ------------------
 
