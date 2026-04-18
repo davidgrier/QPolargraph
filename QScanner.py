@@ -211,7 +211,7 @@ class QScanner(QtWidgets.QMainWindow):
 
     def plotData(self, x: npt.ArrayLike, y: npt.ArrayLike,
                  hue: npt.ArrayLike,
-                 value: npt.ArrayLike = 1.0) -> None:
+                 saturation: npt.ArrayLike = 1.0) -> None:
         '''Add scatter points to the data plot.
 
         Parameters
@@ -222,14 +222,16 @@ class QScanner(QtWidgets.QMainWindow):
             Vertical coordinates [m].
         hue : array-like
             Color values in ``[0, 1]`` (HSV hue).
-        value : array-like, optional
-            Brightness values in ``[0, 1]`` (HSV value).  Default: 1.0.
+        saturation : array-like, optional
+            Saturation values in ``[0, 1]`` (HSV saturation).
+            Default: 1.0 (fully saturated).  Low saturation appears
+            white, high saturation gives the pure hue color.
         '''
         x = np.atleast_1d(x)
         y = np.atleast_1d(y)
         hue = np.atleast_1d(hue)
-        value = np.broadcast_to(np.atleast_1d(value), hue.shape)
-        brush = [pg.hsvColor(h, v=v) for h, v in zip(hue, value)]
+        saturation = np.broadcast_to(np.atleast_1d(saturation), hue.shape)
+        brush = [pg.hsvColor(h, s=s) for h, s in zip(hue, saturation)]
         self.dataPlot.addPoints(x, y, brush=brush)
 
     @QtCore.Slot()

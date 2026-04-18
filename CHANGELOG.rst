@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.2.3 (2026-04-18)
+------------------
+
+- ``QScanner.plotData``: renamed ``value`` parameter to ``saturation``
+  and mapped it to HSV saturation (``s=``) instead of brightness.
+  Loud/strong areas render as pure hue; quiet/weak areas appear white.
+
 1.2.2 (2026-04-18)
 ------------------
 
