@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.1.2 (2026-04-18)
+------------------
+
+- Fixed ``__init__.py`` lazy ``__getattr__``: resolved value is now cached
+  into ``globals()`` so that Python's submodule binding side effect cannot
+  shadow the class with the module object on subsequent accesses.
+
 1.1.1 (2026-04-17)
 ------------------
 
