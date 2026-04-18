@@ -10,6 +10,7 @@ API Reference
    scan_pattern
    raster_scan
    polar_scan
+   tarzan_scan
    scan_pattern_widget
    scanner
    flash_firmware
