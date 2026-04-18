@@ -108,10 +108,13 @@ class FakePolargraph(FakeMotors, Polargraph):
     def moveTo(self, x: float, y: float) -> None:
         '''Move to ``(x, y)`` [m], building an intermediate trajectory.
 
-        Generates up to 10 Cartesian waypoints between the current
-        position and the target.  Subsequent calls to :attr:`position`
-        consume the trajectory one step at a time, returning
-        ``running=1`` until the final step is reached.
+        Generates up to 10 waypoints by interpolating linearly in
+        motor step-index space and converting back to Cartesian via
+        :meth:`i2r`.  This matches the real hardware, where both motors
+        run at constant (but different) speeds so they arrive
+        simultaneously, tracing an arc rather than a straight line.
+        Subsequent calls to :attr:`position` consume the trajectory one
+        step at a time, returning ``running=1`` until the final step.
 
         Set :attr:`step_delay` to a positive value (seconds) to
         throttle playback and produce smooth belt animation in the UI.
@@ -125,12 +128,15 @@ class FakePolargraph(FakeMotors, Polargraph):
         y : float
             Target vertical coordinate [m].
         '''
-        x0, y0, _ = self.i2r(self._store.get('indexes', [0, 0, 0]))
+        m0, n0, _ = self._store.get('indexes', [0, 0, 0])
+        x0, y0, _ = self.i2r([m0, n0, 0])
         dist = np.hypot(x - x0, y - y0)
         nsteps = max(1, min(10, round(dist / self.ds)))
-        xs = np.linspace(x0, x, nsteps + 1)[1:]
-        ys = np.linspace(y0, y, nsteps + 1)[1:]
-        self._cartesian_trajectory = deque(zip(xs.tolist(), ys.tolist()))
+        m1, n1 = self.r2i(x, y)
+        ms = np.linspace(m0, m1, nsteps + 1)[1:]
+        ns = np.linspace(n0, n1, nsteps + 1)[1:]
+        trajectory = [self.i2r([m, n, 0])[:2].tolist() for m, n in zip(ms, ns)]
+        self._cartesian_trajectory = deque(trajectory)
         super().moveTo(x, y)
 
     @property

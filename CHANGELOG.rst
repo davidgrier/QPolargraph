@@ -1,6 +1,14 @@
 Changelog
 =========
 
+1.1.3 (2026-04-18)
+------------------
+
+- ``FakePolargraph.moveTo``: interpolates in motor step-index space
+  rather than Cartesian space, then converts via ``i2r``.  The simulated
+  trajectory now follows arcs matching the real belt-drive geometry
+  instead of straight lines.
+
 1.1.2 (2026-04-18)
 ------------------
 
