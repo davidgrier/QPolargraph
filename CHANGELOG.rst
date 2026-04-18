@@ -1,6 +1,15 @@
 Changelog
 =========
 
+1.1.4 (2026-04-18)
+------------------
+
+- ``FakePolargraph.moveTo``: number of trajectory waypoints is now
+  proportional to arc length (``dist_mm / speed / step_delay``),
+  matching the real hardware which records data at equal time intervals.
+  Longer arcs produce more data points than shorter ones.  Falls back
+  to one-step-per-motor-step when ``step_delay=0`` (automated tests).
+
 1.1.3 (2026-04-18)
 ------------------
 

@@ -108,18 +108,21 @@ class FakePolargraph(FakeMotors, Polargraph):
     def moveTo(self, x: float, y: float) -> None:
         '''Move to ``(x, y)`` [m], building an intermediate trajectory.
 
-        Generates up to 10 waypoints by interpolating linearly in
-        motor step-index space and converting back to Cartesian via
+        Generates waypoints by interpolating linearly in motor
+        step-index space and converting back to Cartesian via
         :meth:`i2r`.  This matches the real hardware, where both motors
         run at constant (but different) speeds so they arrive
         simultaneously, tracing an arc rather than a straight line.
+
+        The number of waypoints is proportional to arc length:
+        ``nsteps = dist_mm / speed_mm_s / step_delay_s``, so that
+        longer arcs produce more data points at the same density as
+        shorter ones — matching the real hardware, which records data
+        at equal time intervals.  When :attr:`step_delay` is zero
+        (automated tests), falls back to one waypoint per motor step.
+
         Subsequent calls to :attr:`position` consume the trajectory one
         step at a time, returning ``running=1`` until the final step.
-
-        Set :attr:`step_delay` to a positive value (seconds) to
-        throttle playback and produce smooth belt animation in the UI.
-        The default of ``0`` runs as fast as possible, which is
-        appropriate for automated tests.
 
         Parameters
         ----------
@@ -131,7 +134,10 @@ class FakePolargraph(FakeMotors, Polargraph):
         m0, n0, _ = self._store.get('indexes', [0, 0, 0])
         x0, y0, _ = self.i2r([m0, n0, 0])
         dist = np.hypot(x - x0, y - y0)
-        nsteps = max(1, min(10, round(dist / self.ds)))
+        if self.step_delay > 0:
+            nsteps = max(1, round(dist * 1e3 / self.speed / self.step_delay))
+        else:
+            nsteps = max(1, round(dist / self.ds))
         m1, n1 = self.r2i(x, y)
         ms = np.linspace(m0, m1, nsteps + 1)[1:]
         ns = np.linspace(n0, n1, nsteps + 1)[1:]
