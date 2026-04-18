@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.1.5 (2026-04-18)
+------------------
+
+- ``QScanPattern.scan``: skip ``home()`` when the scan was interrupted,
+  preventing a hang when the application is closed during an active scan.
+
 1.1.4 (2026-04-18)
 ------------------
 

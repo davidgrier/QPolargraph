@@ -165,9 +165,10 @@ class QScanPattern(QtCore.QObject):
             vertices = self.vertices()
             if self.moveTo([vertices[0, :]]):
                 self._scanning = True
-                self.moveTo(vertices[1:, :])
+                interrupted = not self.moveTo(vertices[1:, :])
                 self._scanning = False
-            self.home()
+                if not interrupted:
+                    self.home()
             self.scanFinished.emit()
         else:
             self.interrupt()

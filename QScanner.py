@@ -22,8 +22,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
-
 class QScanner(QtWidgets.QMainWindow):
 
     '''Application framework for a polargraph scanner.
