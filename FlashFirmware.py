@@ -51,13 +51,13 @@ is only loaded when the user triggers the action.
 from __future__ import annotations
 
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
 
 from qtpy import QtCore, QtWidgets
 from qtpy.QtSerialPort import QSerialPortInfo
+from QPolargraph.hardware.Motors import FIRMWARE_VERSION
 
 
 ARDUINO_VIDS = {
@@ -74,15 +74,6 @@ ARDUINO_LIBS = [
     'AccelStepper',
 ]
 
-
-def _firmware_version() -> str:
-    ino = SKETCH / 'acam3.ino'
-    pattern = re.compile(r'#define\s+VERSION\s+"acam(\S+)"')
-    with ino.open() as f:
-        for line in f:
-            if m := pattern.match(line.strip()):
-                return m.group(1)
-    raise RuntimeError('VERSION not found in acam3.ino')
 
 
 def find_arduinos() -> list[QSerialPortInfo]:
@@ -233,11 +224,7 @@ class FlashDialog(QtWidgets.QDialog):
 
         form = QtWidgets.QFormLayout()
         self._port_combo = QtWidgets.QComboBox()
-        try:
-            version = _firmware_version()
-            label = f'acam3 v{version}'
-        except RuntimeError:
-            label = 'acam3'
+        label = f'acam3 v{FIRMWARE_VERSION}' if FIRMWARE_VERSION else 'acam3'
         form.addRow('Firmware:', QtWidgets.QLabel(label))
         form.addRow('Arduino:', self._port_combo)
         layout.addLayout(form)

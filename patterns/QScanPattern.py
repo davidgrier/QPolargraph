@@ -1,7 +1,12 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
 from qtpy import QtCore
 from qtpy.QtCore import QCoreApplication
 import numpy as np
 import logging
+
+if TYPE_CHECKING:
+    from QPolargraph.hardware.Polargraph import Polargraph
 
 
 logger = logging.getLogger(__name__)
@@ -50,7 +55,7 @@ class QScanPattern(QtCore.QObject):
                  dx: float = 0.,
                  dy: float = 0.1,
                  step: float = 5,
-                 polargraph=None,
+                 polargraph: Polargraph | None = None,
                  **kwargs):
         super().__init__(**kwargs)
         self._width = width

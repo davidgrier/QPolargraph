@@ -71,13 +71,13 @@ class PolarScan(QScanPattern):
             xy = np.append(xy, [p1, p2])
         return xy.reshape(-1, 2)
 
-    def trajectory(self) -> list:
+    def trajectory(self) -> np.ndarray:
         '''Return dense arc paths for all polar sweeps for display.
 
         Returns
         -------
-        list of numpy.ndarray
-            ``[x, y]`` coordinate arrays [m].
+        numpy.ndarray
+            ``(2, npts)`` array of ``(x, y)`` coordinates [m].
         '''
         L = self.polargraph.ell
         x = np.array([])
@@ -91,4 +91,4 @@ class PolarScan(QScanPattern):
             thisx = (r ** 2 - s ** 2) / (2. * L)
             x = np.append(x, thisx)
             y = np.append(y, np.sqrt(r ** 2 - (L / 2. + thisx) ** 2))
-        return [x, y]
+        return np.vstack([x, y])

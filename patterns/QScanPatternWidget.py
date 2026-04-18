@@ -3,6 +3,7 @@ import inspect
 from qtpy import QtCore, QtWidgets
 from qtpy import uic
 from QPolargraph.patterns.PolarScan import PolarScan
+from QPolargraph.patterns.QScanPattern import QScanPattern
 
 
 class QScanPatternWidget(QtWidgets.QWidget):
@@ -26,13 +27,14 @@ class QScanPatternWidget(QtWidgets.QWidget):
 
     UIFILE = 'RasterScanWidget.ui'
     _UIPATH = Path(__file__).parent / UIFILE
+    _FIELDS = ('width', 'height', 'dx', 'dy', 'step')
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         if 'UIFILE' in cls.__dict__:
             cls._UIPATH = Path(inspect.getfile(cls)).parent / cls.UIFILE
 
-    def __init__(self, *args, pattern=None, **kwargs):
+    def __init__(self, *args, pattern: QScanPattern | None = None, **kwargs):
         super().__init__(*args, **kwargs)
         self._pattern = None
         uic.loadUi(self._UIPATH, self)
@@ -51,27 +53,26 @@ class QScanPatternWidget(QtWidgets.QWidget):
             self._syncFromPattern()
 
     def _syncFromPattern(self) -> None:
-        for name in ('width', 'height', 'dx', 'dy', 'step'):
+        for name in self._FIELDS:
             widget = getattr(self, name)
             with QtCore.QSignalBlocker(widget):
                 widget.setValue(getattr(self.pattern, name))
 
     def _connectSignals(self) -> None:
-        for name in ('width', 'height', 'dx', 'dy', 'step'):
+        for name in self._FIELDS:
             getattr(self, name).valueChanged.connect(self._updatePattern)
 
     def _updatePattern(self) -> None:
         if self._pattern is None:
             return
-        for name in ('width', 'height', 'dx', 'dy', 'step'):
+        for name in self._FIELDS:
             setattr(self.pattern, name, getattr(self, name).value())
         self.patternChanged.emit()
 
     @property
     def settings(self) -> dict:
         '''Current scan parameter values, suitable for save/restore.'''
-        return {name: getattr(self, name).value()
-                for name in ('width', 'height', 'dx', 'dy', 'step')}
+        return {name: getattr(self, name).value() for name in self._FIELDS}
 
     @settings.setter
     def settings(self, values: dict) -> None:
