@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.1.6 (2026-04-18)
+------------------
+
+- ``QScanPattern.scan``: set ``_scanning = True`` before the initial move to
+  the start position so that ``closeEvent`` interrupts rather than accepts
+  a close request during early scan setup, preventing a hang in ``time.sleep``.
+
 1.1.5 (2026-04-18)
 ------------------
 

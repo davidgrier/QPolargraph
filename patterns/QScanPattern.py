@@ -163,12 +163,12 @@ class QScanPattern(QtCore.QObject):
         '''Execute a full scan, then return to home.'''
         if not self._moving:
             vertices = self.vertices()
+            self._scanning = True
             if self.moveTo([vertices[0, :]]):
-                self._scanning = True
                 interrupted = not self.moveTo(vertices[1:, :])
-                self._scanning = False
                 if not interrupted:
                     self.home()
+            self._scanning = False
             self.scanFinished.emit()
         else:
             self.interrupt()
