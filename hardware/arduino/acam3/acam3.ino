@@ -14,18 +14,21 @@
  */
 
 #include <stdio.h>
-/* Adafruit Motor Shield v. 2.3 */
 #include <Wire.h>
 #include <AccelStepper.h>
 #include <Adafruit_MotorShield.h>
 
-#define VERSION "acam3.3.2"
+#define VERSION "acam3.5.0"
 
 Adafruit_MotorShield AFMS(0x60);
 Adafruit_StepperMotor *motor1 = AFMS.getStepper(200, 1);
 Adafruit_StepperMotor *motor2 = AFMS.getStepper(200, 2);
 
-/* String I/O */
+/* String I/O
+ * bufsize is large enough for any valid command in the protocol.
+ * The longest command is G:-32768:-32768 (17 bytes including null terminator).
+ * Buffer overflow is not guarded against; the host is the only client.
+ */
 const int bufsize = 32;
 char cmd[bufsize];
 int len = 0;
@@ -35,9 +38,6 @@ bool command_ready = false;
 bool is_running = false;
 bool shield_ok = false;
 
-/* motor positions (steps) */
-long n1 = 0;
-long n2 = 0;
 
 /* Motor configuration */
 void forwardstep1() {
@@ -60,6 +60,8 @@ AccelStepper stepper1(forwardstep1, backwardstep1);
 AccelStepper stepper2(forwardstep2, backwardstep2);
 
 void set_target() {
+  long n1, n2;
+  /* sscanf return value is not checked; Assume Motors.py sends well-formed commands. */
   sscanf(cmd, "G:%ld:%ld", &n1, &n2);
   stepper1.moveTo(n1);
   stepper2.moveTo(n2);
@@ -124,13 +126,16 @@ void release_motors() {
 }
 
 void getset_position() {
+  long n1, n2;
   if (len == 1) {
     n1 = stepper1.currentPosition();
     n2 = stepper2.currentPosition();
-    Serial.print(is_running ? "R:" : "P:");
+    Serial.print("P:");
     Serial.print(n1);
     Serial.print(':');
-    Serial.println(n2);
+    Serial.print(n2);
+    Serial.print(':');
+    Serial.println(is_running);
   } else {
     sscanf(cmd, "P:%ld:%ld", &n1, &n2);
     stepper1.setCurrentPosition(n1);
@@ -142,23 +147,6 @@ void getset_position() {
 void query_isrunning() {
   Serial.print("R:");
   Serial.println(is_running);
-}
-
-void scan_i2c() {
-  bool first = true;
-  Serial.print("I:");
-  for (byte addr = 1; addr < 127; addr++) {
-    Wire.beginTransmission(addr);
-    if (Wire.endTransmission() == 0) {
-      if (!first) Serial.print(',');
-      Serial.print("0x");
-      if (addr < 16) Serial.print('0');
-      Serial.print(addr, HEX);
-      first = false;
-    }
-  }
-  if (first) Serial.print("NONE");
-  Serial.println();
 }
 
 /* Dispatch commands */
@@ -189,9 +177,6 @@ void parse_command() {
       Serial.print(VERSION);
       Serial.println(shield_ok ? ":OK" : ":NOSHIELD");
       break;
-    case 'I':
-      scan_i2c();
-      break;
     default:
       Serial.println(cmd);
       break;
@@ -201,7 +186,7 @@ void parse_command() {
 }
 
 void setup() {
-  Serial.begin(9600, SERIAL_8N1);
+  Serial.begin(115200, SERIAL_8N1);
   while (!Serial) {
     ;                           // wait for serial port to connect
   }

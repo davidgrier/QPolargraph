@@ -231,7 +231,7 @@ class QScanner(QtWidgets.QMainWindow):
         y = np.atleast_1d(y)
         hue = np.atleast_1d(hue)
         saturation = np.broadcast_to(np.atleast_1d(saturation), hue.shape)
-        brush = [pg.hsvColor(h, s=s) for h, s in zip(hue, saturation)]
+        brush = [pg.hsvColor(h, sat=s) for h, s in zip(hue, saturation)]
         self.dataPlot.addPoints(x, y, brush=brush)
 
     @QtCore.Slot()

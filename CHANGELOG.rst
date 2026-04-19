@@ -1,6 +1,22 @@
 Changelog
 =========
 
+1.3.0 (2026-04-19)
+------------------
+
+- ``acam3`` firmware 3.5.0: raised baud rate from 9600 to 115200; removed
+  diagnostic ``I`` command; ``P`` query now always responds ``P:n1:n2:running``
+  (running state encoded as a third field rather than an ambiguous prefix);
+  ``n1``/``n2`` made local to the functions that use them.
+- ``Motors.comm``: updated baud rate to ``Baud115200``.
+- ``Motors.indexes``: updated parser for the new ``P:n1:n2:running`` response format.
+
+1.2.4 (2026-04-18)
+------------------
+
+- ``QScanner.plotData``: fixed ``pg.hsvColor`` keyword argument from
+  ``s=`` to ``sat=`` (correct pyqtgraph API).
+
 1.2.3 (2026-04-18)
 ------------------
 

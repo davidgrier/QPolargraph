@@ -101,7 +101,7 @@ class Motors(QSerialInstrument):
 
     FIRMWARE_VERSION = _firmware_version()
 
-    comm = dict(baudRate=QSerialInstrument.BaudRate.Baud9600,
+    comm = dict(baudRate=QSerialInstrument.BaudRate.Baud115200,
                 dataBits=QSerialInstrument.DataBits.Data8,
                 stopBits=QSerialInstrument.StopBits.OneStop,
                 parity=QSerialInstrument.Parity.NoParity,
@@ -122,8 +122,9 @@ class Motors(QSerialInstrument):
         self.registerMethod('release', self.release)
 
     def identify(self) -> bool:
-        '''Return ``True`` if the port responds with the expected acam3 version string
-        and the Adafruit Motor Shield is detected.
+        '''Return ``True`` if
+        (1) the port responds with the correct acam3 version string, and
+        (2) the Adafruit Motor Shield is detected.
 
         Waits 2 s after opening for the Arduino to reset, then sends ``Q``
         and checks that the response is ``acam{FIRMWARE_VERSION}:OK``.
@@ -151,28 +152,6 @@ class Motors(QSerialInstrument):
             return False
         logger.info(f' Arduino running acam {fw_version}, motor shield OK')
         return True
-
-    def scan_i2c(self) -> list[str]:
-        '''Scan the I2C bus and return a list of responding addresses.
-
-        Sends the ``I`` command to the firmware, which probes all 7-bit
-        I2C addresses and reports each one that acknowledges.  Useful for
-        diagnosing motor shield detection failures.
-
-        Returns
-        -------
-        list[str]
-            Hex address strings (e.g. ``['0x60']``), or an empty list if
-            nothing responds or the port is not open.
-        '''
-        if not self.isOpen():
-            return []
-        res = self.handshake('I', timeout=2000)
-        payload = res.removeprefix('I:').strip()
-        if not payload or payload == 'NONE':
-            return []
-        return payload.split(',')
-
 
     def process(self, data: str) -> None:
         logger.debug(f' received: {data}')
@@ -222,8 +201,8 @@ class Motors(QSerialInstrument):
         if not self.isOpen():
             return np.array([0, 0, 0])
         try:
-            status, n1, n2 = self.handshake('P').split(':')
-            indexes = [int(n1), int(n2), int(status == 'R')]
+            _, n1, n2, running = self.handshake('P').split(':')
+            indexes = [int(n1), int(n2), int(running)]
             logger.debug(f'{indexes}')
         except Exception as ex:
             logger.warning(f'Did not read position: {ex}')
