@@ -1,6 +1,16 @@
 Changelog
 =========
 
+1.3.1 (2026-04-19)
+------------------
+
+- ``QScanPattern``: removed ``QCoreApplication.processEvents()`` from the
+  scan loop now that ``QSerialInterface.receive()`` no longer blocks the
+  event loop (requires ``QInstrument>=2.4``).
+- ``QScanner._startMove``: removed outdated docstring note about
+  ``processEvents()``.
+- ``pyproject.toml``: bumped ``QInstrument`` dependency to ``>=2.4``.
+
 1.3.0 (2026-04-19)
 ------------------
 

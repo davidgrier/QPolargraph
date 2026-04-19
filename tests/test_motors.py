@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 from QPolargraph.hardware.fake import FakeMotors
+from QPolargraph.hardware.Motors import Motors
 
 
 @pytest.fixture
@@ -73,4 +74,4 @@ def test_close_does_not_raise(motors):
 
 
 def test_firmware_version():
-    assert FakeMotors.FIRMWARE_VERSION == '3.3.2'
+    assert FakeMotors.FIRMWARE_VERSION == Motors.FIRMWARE_VERSION

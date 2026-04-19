@@ -43,13 +43,13 @@ def test_is_open(scan):
 
 
 def test_rect_x_bounds(scan):
-    x1, y1, x2, y2 = scan.rect()
+    x1, y1, x2, y2 = scan.rect
     assert x1 == pytest.approx(-scan.width / 2)
     assert x2 == pytest.approx(scan.width / 2)
 
 
 def test_rect_y_bounds(scan):
-    x1, y1, x2, y2 = scan.rect()
+    x1, y1, x2, y2 = scan.rect
     assert y1 == pytest.approx(scan.polargraph.y0 + scan.dy)
     assert y2 == pytest.approx(y1 + scan.height)
 
@@ -81,14 +81,14 @@ def test_raster_vertices_shape(raster):
 
 def test_raster_x_within_rect(raster):
     v = raster.vertices()
-    x1, _, x2, _ = raster.rect()
+    x1, _, x2, _ = raster.rect
     assert v[:, 0].min() >= x1 - 1e-9
     assert v[:, 0].max() <= x2 + 1e-9
 
 
 def test_raster_alternating_y(raster):
     v = raster.vertices()
-    _, y1, _, y2 = raster.rect()
+    _, y1, _, y2 = raster.rect
     assert v[0, 1] == pytest.approx(y1)
     assert v[1, 1] == pytest.approx(y2)
 
@@ -199,7 +199,7 @@ def test_tarzan_x0_setter(tarzan):
 
 
 def test_tarzan_cycle_returns_four_points(tarzan):
-    _, y_top, _, _ = tarzan.rect()
+    _, y_top, _, _ = tarzan.rect
     p0 = np.array([tarzan.x0, y_top])
     result = tarzan._cycle(p0)
     assert result is not None
@@ -209,28 +209,28 @@ def test_tarzan_cycle_returns_four_points(tarzan):
 
 
 def test_tarzan_cycle_p1_on_right_edge(tarzan):
-    _, y_top, x_right, _ = tarzan.rect()
+    _, y_top, x_right, _ = tarzan.rect
     p0 = np.array([tarzan.x0, y_top])
     p1, _, _, _ = tarzan._cycle(p0)
     assert p1[0] == pytest.approx(x_right, abs=1e-9)
 
 
 def test_tarzan_cycle_p2_on_bottom_edge(tarzan):
-    _, y_top, _, y_bottom = tarzan.rect()
+    _, y_top, _, y_bottom = tarzan.rect
     p0 = np.array([tarzan.x0, y_top])
     _, p2, _, _ = tarzan._cycle(p0)
     assert p2[1] == pytest.approx(y_bottom, abs=1e-9)
 
 
 def test_tarzan_cycle_p3_on_left_edge(tarzan):
-    x_left, y_top, _, _ = tarzan.rect()
+    x_left, y_top, _, _ = tarzan.rect
     p0 = np.array([tarzan.x0, y_top])
     _, _, p3, _ = tarzan._cycle(p0)
     assert p3[0] == pytest.approx(x_left, abs=1e-9)
 
 
 def test_tarzan_cycle_p4_on_top_edge(tarzan):
-    _, y_top, _, _ = tarzan.rect()
+    _, y_top, _, _ = tarzan.rect
     p0 = np.array([tarzan.x0, y_top])
     _, _, _, p4 = tarzan._cycle(p0)
     assert p4[1] == pytest.approx(y_top, abs=1e-9)
@@ -238,7 +238,7 @@ def test_tarzan_cycle_p4_on_top_edge(tarzan):
 
 def test_tarzan_cycle_p1_on_arc_around_right_pulley(tarzan):
     '''P0 and P1 must be equidistant from the right pulley.'''
-    _, y_top, _, _ = tarzan.rect()
+    _, y_top, _, _ = tarzan.rect
     L, R = tarzan._pulley_positions()
     p0 = np.array([tarzan.x0, y_top])
     p1, _, _, _ = tarzan._cycle(p0)
@@ -247,7 +247,7 @@ def test_tarzan_cycle_p1_on_arc_around_right_pulley(tarzan):
 
 def test_tarzan_cycle_p2_on_arc_around_left_pulley(tarzan):
     '''P1 and P2 must be equidistant from the left pulley.'''
-    _, y_top, _, _ = tarzan.rect()
+    _, y_top, _, _ = tarzan.rect
     L, R = tarzan._pulley_positions()
     p0 = np.array([tarzan.x0, y_top])
     p1, p2, _, _ = tarzan._cycle(p0)
@@ -256,7 +256,7 @@ def test_tarzan_cycle_p2_on_arc_around_left_pulley(tarzan):
 
 def test_tarzan_cycle_all_points_have_positive_y(tarzan):
     '''All four cycle corners must be physically below the motors (y > 0).'''
-    _, y_top, _, _ = tarzan.rect()
+    _, y_top, _, _ = tarzan.rect
     p0 = np.array([tarzan.x0, y_top])
     p1, p2, p3, p4 = tarzan._cycle(p0)
     for pt in [p1, p2, p3, p4]:
@@ -276,7 +276,7 @@ def test_tarzan_vertices_minimum_length(tarzan):
 
 
 def test_tarzan_vertices_start_on_top_edge(tarzan):
-    _, y_top, _, _ = tarzan.rect()
+    _, y_top, _, _ = tarzan.rect
     v = tarzan.vertices()
     assert v[0, 1] == pytest.approx(y_top, abs=1e-9)
     assert v[0, 0] == pytest.approx(tarzan.x0)

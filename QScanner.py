@@ -245,9 +245,11 @@ class QScanner(QtWidgets.QMainWindow):
                    on_finished: callable | None = None) -> None:
         '''Run fn on the main thread with UI locked and belt timer active.
 
-        Serial I/O via QSerialPort must stay on the thread that opened the
-        port (the main thread).  processEvents() calls inside the scan loop
-        keep the UI responsive while the blocking serial calls execute.
+        The scan loop calls processEvents() each iteration to dispatch
+        deferred callbacks (e.g. QTimer.singleShot) and queued signals
+        between position polls.  With real hardware, QSerialInterface.receive()
+        also processes events internally via QEventLoop, so GUI responsiveness
+        does not depend on processEvents() alone.
         '''
         for name in self._SCAN_LOCKED:
             getattr(self, name).setEnabled(False)

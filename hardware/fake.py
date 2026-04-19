@@ -104,7 +104,6 @@ class FakePolargraph(FakeMotors, Polargraph):
         self.speed = speed
         self.step_delay = step_delay
         self._cartesian_trajectory: deque = deque()
-        self._last_xy: list[float] | None = None
 
     def moveTo(self, x: float, y: float) -> None:
         '''Move to ``(x, y)`` [m], building an intermediate trajectory.
@@ -144,7 +143,6 @@ class FakePolargraph(FakeMotors, Polargraph):
         ns = np.linspace(n0, n1, nsteps + 1)[1:]
         trajectory = [self.i2r([m, n, 0])[:2].tolist() for m, n in zip(ms, ns)]
         self._cartesian_trajectory = deque(trajectory)
-        self._last_xy = [x0, y0]
         super().moveTo(x, y)
 
     @property
