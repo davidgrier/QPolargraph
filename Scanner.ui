@@ -14,16 +14,9 @@
    <string>QScanner</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_4">
-    <item>
-     <widget class="QSplitter" name="splitter">
-      <property name="orientation">
-       <enum>Qt::Horizontal</enum>
-      </property>
-      <property name="childrenCollapsible">
-       <bool>false</bool>
-      </property>
-      <widget class="QWidget" name="scanWidget" native="true">
+   <layout class="QHBoxLayout" name="horizontalLayout_main">
+    <item stretch="1">
+     <widget class="QWidget" name="scanWidget" native="true">
        <layout class="QVBoxLayout" name="verticalLayout">
         <property name="spacing">
          <number>1</number>
@@ -72,7 +65,9 @@
         </item>
        </layout>
       </widget>
-      <widget class="QWidget" name="controls" native="true">
+    </item>
+    <item stretch="0">
+     <widget class="QWidget" name="controls" native="true">
        <layout class="QVBoxLayout" name="controlsLayout">
         <property name="spacing">
          <number>1</number>
@@ -130,7 +125,6 @@
         </item>
        </layout>
       </widget>
-     </widget>
     </item>
    </layout>
   </widget>
