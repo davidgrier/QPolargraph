@@ -36,8 +36,9 @@ class QPolargraphWidget(QInstrumentWidget):
         Opens :class:`~QPolargraph.FlashFirmware.FlashDialog` when at
         least one Arduino-like device is found on a serial port.  If the
         flash succeeds the dialog accepts and this method attempts a new
-        :class:`~QPolargraph.Polargraph.Polargraph` connection; on
-        success ``self.device`` is replaced with the live instrument.
+        :class:`~QPolargraph.Polargraph.Polargraph` connection after a
+        2-second boot delay; on success ``self.device`` is replaced with
+        the live instrument.
         '''
         import time
         from qtpy import QtWidgets
