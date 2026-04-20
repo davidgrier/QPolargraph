@@ -57,7 +57,8 @@ from pathlib import Path
 
 from qtpy import QtCore, QtWidgets
 from qtpy.QtSerialPort import QSerialPortInfo
-from QPolargraph.hardware.Motors import FIRMWARE_VERSION
+from QPolargraph.hardware.Motors import Motors
+FIRMWARE_VERSION = Motors.FIRMWARE_VERSION
 
 
 ARDUINO_VIDS = {
@@ -210,17 +211,27 @@ class FlashDialog(QtWidgets.QDialog):
     ----------
     parent : QtWidgets.QWidget, optional
         Parent widget.
+    message : str, optional
+        Explanatory text shown above the form.  Use this when the dialog
+        is opened automatically (e.g. because no acam3 device was found)
+        so the user understands why it appeared.
     '''
 
-    def __init__(self, parent: QtWidgets.QWidget | None = None):
+    def __init__(self, parent: QtWidgets.QWidget | None = None,
+                 message: str | None = None):
         super().__init__(parent)
         self.setWindowTitle('Flash acam3 Firmware')
         self._worker: _FlashWorker | None = None
-        self._setup_ui()
+        self._setup_ui(message)
         self._populate()
 
-    def _setup_ui(self) -> None:
+    def _setup_ui(self, message: str | None = None) -> None:
         layout = QtWidgets.QVBoxLayout(self)
+
+        if message:
+            label = QtWidgets.QLabel(message)
+            label.setWordWrap(True)
+            layout.addWidget(label)
 
         form = QtWidgets.QFormLayout()
         self._port_combo = QtWidgets.QComboBox()
@@ -277,9 +288,7 @@ class FlashDialog(QtWidgets.QDialog):
     def _on_finished(self, success: bool) -> None:
         self._flash_btn.setEnabled(True)
         if success:
-            QtWidgets.QMessageBox.information(
-                self, 'Done', 'Firmware flashed successfully.'
-            )
+            self.accept()
         else:
             QtWidgets.QMessageBox.warning(
                 self, 'Failed',

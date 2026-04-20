@@ -1,6 +1,25 @@
 Changelog
 =========
 
+1.3.2 (2026-04-20)
+------------------
+
+- ``QPolargraphWidget``: when no acam3 device is found at startup, the
+  widget now checks for any Arduino-like serial device and, if one is
+  found, opens :class:`~QPolargraph.FlashFirmware.FlashDialog` with an
+  explanatory message.  On successful flash the connection is retried
+  after a 2-second boot delay so the Arduino has time to restart.  If no
+  Arduino is present, the user closes the dialog, or the flash fails, the
+  widget falls back to :class:`~QPolargraph.hardware.fake.FakePolargraph`
+  as before.
+- ``FlashDialog``: added optional ``message`` parameter; explanatory text
+  is shown above the form when the dialog is opened automatically.  On a
+  successful flash the dialog now calls ``accept()`` (closing itself)
+  rather than showing a separate success ``QMessageBox``; the output area
+  already shows *Firmware installed successfully.*
+- ``FlashFirmware``: fixed ``FIRMWARE_VERSION`` import — it is a class
+  attribute of ``Motors``, not a module-level name.
+
 1.3.1 (2026-04-19)
 ------------------
 

@@ -27,21 +27,27 @@ length of one side of the V, moving the payload in two dimensions.
 Firmware
 --------
 
-The Arduino must be flashed with ``hardware/arduino/acam3/acam3.ino``
-before first use.  The easiest way is the built-in installer:
+The Arduino must be flashed with the bundled ``acam3`` firmware before
+first use.
+
+**Automatic (recommended)** — connect the Arduino and launch any
+QPolargraph-based application.  If the application finds an Arduino but
+no acam3 firmware, it opens
+:class:`~QPolargraph.FlashFirmware.FlashDialog` automatically.  Click
+*Flash Firmware* to install the firmware and the application will connect
+immediately after.  This requires
+`arduino-cli <https://arduino.github.io/arduino-cli/>`_ to be installed
+and on ``PATH``.
+
+**Manual flash tool** — run the standalone flash utility:
 
 .. code-block:: bash
 
    qpolargraph-flash
 
-This opens a dialog that detects the attached Arduino, installs any
-missing Arduino libraries (``Adafruit Motor Shield V2 Library``,
-``AccelStepper``), compiles, and uploads the firmware — all without
-opening the Arduino IDE.  It requires
-`arduino-cli <https://arduino.github.io/arduino-cli/>`_ to be installed
-and on ``PATH``.
+This opens the same dialog independently of the main application.
 
-Alternatively, open ``hardware/arduino/acam3/acam3.ino`` in the
+**Arduino IDE** — open ``hardware/arduino/acam3/acam3.ino`` in the
 `Arduino IDE <https://www.arduino.cc/en/software>`_ and upload manually.
 
 The firmware and package versions are coupled: :meth:`Motors.identify`
@@ -49,8 +55,9 @@ checks that the connected Arduino reports the expected firmware version
 and that the Adafruit Motor Shield is detected at I2C address ``0x60``,
 refusing to open the port if either check fails.
 
-You can also integrate the flash dialog into a ``QMainWindow`` application
-as a menu action (see :class:`~QPolargraph.FlashFirmware.FlashDialog`).
+You can also wire :class:`~QPolargraph.FlashFirmware.FlashDialog` into a
+``QMainWindow`` application as a menu action (see
+:class:`~QPolargraph.FlashFirmware.FlashDialog` for the example).
 
 Calibration
 -----------
