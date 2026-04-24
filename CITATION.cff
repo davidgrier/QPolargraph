@@ -1,9 +1,9 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it using the metadata below."
 title: "QPolargraph"
-version: "1.0.0"
+version: "1.2.3"
 doi: 10.5281/zenodo.19630922
-date-released: "2026-04-15"
+date-released: "2026-04-18"
 authors:
   - family-names: Grier
     given-names: David G.
