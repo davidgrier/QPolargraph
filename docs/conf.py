@@ -46,19 +46,8 @@ autodoc_default_options = {
     'show-inheritance': True,
 }
 
-# Qt and scientific stack are not available on the RTD build server;
-# mock all external imports.
-autodoc_mock_imports = [
-    'PyQt5',
-    'PyQt6',
-    'PySide2',
-    'PySide6',
-    'qtpy',
-    'numpy',
-    'pyqtgraph',
-    'parse',
-    'QInstrument',
-]
+# PyQt5, qtpy, numpy, pyqtgraph, parse, and QInstrument are installed
+# as package dependencies on the RTD build server — no mocking needed.
 
 # intersphinx: link to external package docs
 intersphinx_mapping = {
@@ -69,17 +58,10 @@ intersphinx_mapping = {
 # -- Suppress duplicate-object warnings from Sphinx 8.x ---------------------
 
 def _skip_signal_docstring(app, what, name, obj, options, lines):
-    '''Suppress auto-generated signal docstrings (empty or mock artefacts).'''
+    '''Suppress auto-generated signal docstrings.'''
     try:
-        from PyQt6.QtCore import pyqtSignal
+        from PyQt5.QtCore import pyqtSignal
         if isinstance(obj, pyqtSignal):
-            lines.clear()
-            return
-    except ImportError:
-        pass
-    try:
-        from unittest.mock import NonCallableMock
-        if isinstance(obj, NonCallableMock):
             lines.clear()
     except ImportError:
         pass

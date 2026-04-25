@@ -41,6 +41,7 @@ docs = [
     "sphinx>=8.0",
     "pydata-sphinx-theme>=0.16",
     "sphinx-autodoc-typehints>=2.0",
+    "PyQt5",
 ]
 
 [project.gui-scripts]
