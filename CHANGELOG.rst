@@ -1,6 +1,15 @@
 Changelog
 =========
 
+1.3.3 (2026-04-29)
+------------------
+
+- ``pyproject.toml``: bumped ``QInstrument`` dependency floor to ``>=3.0``.
+  QInstrument 3.0 is a breaking release; QPolargraph is fully compatible
+  as :class:`~QPolargraph.hardware.Motors.Motors` only uses APIs on
+  :class:`~QInstrument.lib.QSerialInstrument.QSerialInstrument`, which
+  are unchanged.
+
 1.3.2 (2026-04-20)
 ------------------
 
