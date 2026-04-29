@@ -29,7 +29,7 @@ dependencies = [
     "qtpy>=2.0",
     "pyqtgraph>=0.13",
     "parse>=1.19",
-    "QInstrument>=2.4",
+    "QInstrument>=3.0",
 ]
 
 [project.optional-dependencies]
