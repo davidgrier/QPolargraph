@@ -8,7 +8,7 @@ class QPolargraphWidget(QInstrumentWidget):
 
     Connects a :class:`~QPolargraph.Polargraph.Polargraph` device to
     the ``PolargraphWidget.ui`` layout via :class:`QInstrumentWidget`.
-    Hardware is located automatically at startup; if none is found the
+    Hardware is located automatically at startup; if none is found, the
     widget offers to flash the acam3 firmware onto any detected Arduino
     via :class:`~QPolargraph.FlashFirmware.FlashDialog`, then retries
     the connection.  If no Arduino is present or the user declines, the
@@ -45,7 +45,7 @@ class QPolargraphWidget(QInstrumentWidget):
         from QPolargraph.FlashFirmware import FlashDialog, find_arduinos
         if not find_arduinos():
             return
-        message = ('No acam3 firmware was detected on the connected Arduino. '
+        message = ('acam3 firmware not detected on the connected Arduino. '
                    'Flash the firmware to connect.')
         dialog = FlashDialog(self, message=message)
         if dialog.exec() == QtWidgets.QDialog.DialogCode.Accepted:

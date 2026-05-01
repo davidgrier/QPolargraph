@@ -1,3 +1,4 @@
+from qtpy import QtCore
 from QPolargraph.hardware.Motors import Motors
 import numpy as np
 import logging
@@ -8,7 +9,7 @@ logger = logging.getLogger(__name__)
 
 class Polargraph(Motors):
 
-    '''Cartesian abstraction of a polargraph scanner.
+    '''Base implementation for a polargraph scanner.
 
     Extends :class:`Motors` with the belt-drive geometry to convert
     between motor step-index space and Cartesian coordinates in metres.
@@ -141,9 +142,9 @@ class Polargraph(Motors):
     @property
     def s0(self) -> float:
         '''Belt length from pulley to payload at the home position [m].'''
-        return np.sqrt((self.ell / 2.) ** 2 + self.y0 ** 2)
+        return np.hypot(self.ell/2., self.y0)
 
-    def r2i(self, x: float, y: float) -> tuple:
+    def r2f(self, x: float, y: float) -> tuple(float, float):
         '''Convert Cartesian coordinates to continuous step indexes.
 
         This is the exact (non-rounded) inverse of :meth:`i2r`, useful
@@ -162,39 +163,60 @@ class Polargraph(Motors):
         tuple
             ``(m, n)`` step indexes as floats.
         '''
-        sm = np.sqrt((self.ell / 2. + x) ** 2 + y ** 2)
-        sn = np.sqrt((self.ell / 2. - x) ** 2 + y ** 2)
-        return (sm - self.s0) / self.ds, (self.s0 - sn) / self.ds
+        sm = np.hypot(self.ell/2. + x, y)
+        sn = np.hypot(self.ell/2. - x, y)
+        m = (sm - self.s0) / self.ds
+        n = (self.s0 - sn) / self.ds
+        return m, n
 
-    def i2r(self, indexes) -> np.ndarray:
+    def r2i(self, x: float, y: float) -> tuple(int, int):
+        '''Convert Cartesian coordinates to integer motor step indexes.
+
+        Parameters
+        ----------
+        x : float
+            Horizontal coordinate [m].
+        y : float
+            Vertical coordinate [m].
+
+        Returns
+        -------
+        tuple
+            ``(m, n)`` step indexes as integers.
+        '''
+        return np.rint(self.r2f(x, y)).astype(int)
+
+    def i2r(self, m: int | float, n: int | float, *args) -> np.ndarray:
         '''Convert motor step indexes to Cartesian coordinates [m].
 
         Parameters
         ----------
-        indexes : array-like
-            ``(m, n, status)`` motor step counts and running flag.
+        m: int or float
+            Step index for motor 1.
+        n: int or float
+            Step index for motor 2.
 
         Returns
         -------
         numpy.ndarray
             ``(x, y, status)`` Cartesian position [m] and running flag.
         '''
-        m, n, status = indexes
         sm = self.s0 + m * self.ds
         sn = self.s0 - n * self.ds
-        x = (sm ** 2 - sn ** 2) / (2. * self.ell)
-        ysq = (sn ** 2 + sm ** 2) / 2. - self.ell ** 2 / 4. - x ** 2
+        x = (sm + sn) * (sm - sn) / (2. * self.ell)
+        ysq = (sn*sn + sm*sm)/2. - (self.ell/2.)**2 - x*x
         if ysq < 0:
             logger.error('unphysical result: '
                          f'{m} {n} {self.s0} {sm} {sn} {ysq}')
         y = np.sqrt(ysq) if ysq >= 0 else self.y0
-        return np.array([x, y, status])
+        return np.array([x, y, *args])
 
     @property
     def position(self) -> np.ndarray:
-        '''Current Cartesian coordinates ``(x, y, running)`` [m, m, flag].'''
-        return self.i2r(self.indexes)
+        '''Returns current Cartesian coordinates and a running flag'''
+        return self.i2r(*self.indexes)
 
+    @QtCore.Slot(float, float)
     def moveTo(self, x: float, y: float) -> None:
         '''Move the payload to position ``(x, y)`` [m].
 
@@ -208,13 +230,10 @@ class Polargraph(Motors):
         y : float
             Target vertical coordinate [m].
         '''
-        m0, n0, running = self.indexes
-        sm = np.sqrt((self.ell / 2. + x) ** 2 + y ** 2)
-        sn = np.sqrt((self.ell / 2. - x) ** 2 + y ** 2)
-        m1 = np.rint((sm - self.s0) / self.ds).astype(int)
-        n1 = np.rint((self.s0 - sn) / self.ds).astype(int)
+        m0, n0, _ = self.indexes
+        m1, n1 = self.r2i(x, y)
 
-        if (m0 == m1) or (n0 == n1):
+        if m0 == m1 or n0 == n1:
             vm, vn = self.speed, self.speed
         else:
             f = (float(n1 - n0) / float(m1 - m0)) ** 2
@@ -238,12 +257,21 @@ def main():
         from QPolargraph.hardware.fake import FakePolargraph
         polargraph = FakePolargraph()
     print(f'Current position: {polargraph.indexes}')
-    polargraph.moveTo(0.0, 100)
-    if polargraph.running():
-        print('Running...')
+    polargraph.moveTo(0., 0.25)
+    print('Running...')
     while polargraph.running():
-        pass
-    print(f'Current position: {polargraph.indexes}')
+        print(f'Current position: {polargraph.indexes}', end='\r')
+        QtCore.QThread.msleep(100)
+    print(f'Arrived:          {polargraph.indexes}')
+    print('Moving back to home...')
+    polargraph.moveTo(0., 0.)
+    while polargraph.running():
+        print(f'Current position: {polargraph.indexes}', end='\r')
+        QtCore.QThread.msleep(100)
+    print(f'Final position:      {polargraph.indexes}')
+    # TODO: In tests with real hardware, the polargraph returns
+    # consistently to position [-40, 40, 0] instead of [0, 0, 0].
+    # This is a software bug, not a hardware issue.
     polargraph.close()
     app.quit()
 

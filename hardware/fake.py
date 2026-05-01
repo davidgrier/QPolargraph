@@ -132,7 +132,7 @@ class FakePolargraph(FakeMotors, Polargraph):
             Target vertical coordinate [m].
         '''
         m0, n0, _ = self._store.get('indexes', [0, 0, 0])
-        x0, y0, _ = self.i2r([m0, n0, 0])
+        x0, y0, _ = self.i2r(m0, n0, 0)
         dist = np.hypot(x - x0, y - y0)
         if self.step_delay > 0:
             nsteps = max(1, round(dist * 1e3 / self.speed / self.step_delay))
@@ -141,7 +141,7 @@ class FakePolargraph(FakeMotors, Polargraph):
         m1, n1 = self.r2i(x, y)
         ms = np.linspace(m0, m1, nsteps + 1)[1:]
         ns = np.linspace(n0, n1, nsteps + 1)[1:]
-        trajectory = [self.i2r([m, n, 0])[:2].tolist() for m, n in zip(ms, ns)]
+        trajectory = [self.i2r(m, n, 0)[:2].tolist() for m, n in zip(ms, ns)]
         self._cartesian_trajectory = deque(trajectory)
         super().moveTo(x, y)
 
