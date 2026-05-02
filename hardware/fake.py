@@ -161,6 +161,8 @@ class FakePolargraph(FakeMotors, Polargraph):
                 time.sleep(self.step_delay)
             x, y = self._cartesian_trajectory.popleft()
             running = float(bool(self._cartesian_trajectory))
+            m, n = self.r2i(x, y)
+            self._store['indexes'] = [int(m), int(n), 0]
             return np.array([x, y, running])
         return self.i2r(*self._store.get('indexes', [0, 0, 0]))
 
