@@ -179,3 +179,61 @@ def test_center_disables_controls(fake_scanner, qtbot):
     fake_scanner.scanner.pattern.center()
     assert enabled_during_move == [False]
     assert fake_scanner.home.isEnabled()
+
+
+# --- _syncPatternThread ---
+
+def test_sync_pattern_thread_noop_for_fake(scanner):
+    '''FakePolargraph is not a QSerialInstrument; pattern stays on main thread.'''
+    main_thread = QtCore.QThread.currentThread()
+    scanner._syncPatternThread()
+    assert scanner.scanner.pattern.thread() is main_thread
+
+
+def test_sync_pattern_thread_noop_when_device_on_main_thread(scanner, qtbot):
+    '''Pattern is not moved when the serial device is still on the main thread.'''
+    from unittest.mock import patch, MagicMock
+
+    class _FakeSerial(QtCore.QObject):
+        pass
+
+    main_thread = QtCore.QThread.currentThread()
+    fake_device = _FakeSerial()  # lives on the main thread
+    mock_pg = MagicMock()
+    mock_pg.device = fake_device
+
+    with patch.object(scanner, 'polargraph', mock_pg):
+        with patch('QInstrument.lib.QSerialInstrument.QSerialInstrument',
+                   new=_FakeSerial):
+            scanner._syncPatternThread()
+
+    assert scanner.scanner.pattern.thread() is main_thread
+
+
+def test_sync_pattern_thread_moves_pattern_to_device_thread(scanner, qtbot):
+    '''Pattern is moved to the device thread when it differs from the main thread.'''
+    from unittest.mock import patch, MagicMock
+
+    class _FakeSerial(QtCore.QObject):
+        pass
+
+    worker = QtCore.QThread()
+    worker.start()
+    try:
+        fake_device = _FakeSerial()
+        fake_device.moveToThread(worker)
+        mock_pg = MagicMock()
+        mock_pg.device = fake_device
+
+        with patch.object(scanner, 'polargraph', mock_pg):
+            with patch('QInstrument.lib.QSerialInstrument.QSerialInstrument',
+                       new=_FakeSerial):
+                scanner._syncPatternThread()
+
+        assert scanner.scanner.pattern.thread() is worker
+        scanner.scanner.pattern.moveToThread(QtCore.QThread.currentThread())
+        qtbot.wait(10)
+    finally:
+        fake_device.deleteLater()
+        worker.quit()
+        worker.wait()

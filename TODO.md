@@ -45,79 +45,60 @@ deleted; `RasterScan.trajectory` calls `pg.i2r` directly.
 
 ## API consistency
 
-**6. Motion-state reported two ways via different serial commands**
-`Motors.py:194` vs `Motors.py:208` — `running()` sends an `R` command;
-`indexes` encodes the running flag as `indexes[2]` via the `P` command.
-`_moveTo` polls `position[2]` (P-based); `main()` polls `running()` (R-based).
-Sending both commands wastes round-trips and means callers must pick a path.
-Resolution: document which path is authoritative and remove or deprecate
-the other, or have `running()` delegate to `indexes[2]`.
+**6. Motion-state reported two ways via different serial commands** ✓ fixed
+`running()` now delegates to `indexes[2]` (P command), consistent with
+the scan loop.  Firmware R command preserved for direct hardware use.
 
-**7. `_moveTo` result is a bare string instead of an enum**
-`QScanPattern.py:233` — `_moveTo` returns `'complete'`, `'paused'`, or
-`'abandoned'`.  These are used in six `if result ==` comparisons; a typo
-is a silent logic error.
-Resolution: add a small `_MoveResult` `StrEnum` or reuse/extend `ScanState`.
+**7. `_moveTo` result is a bare string instead of an enum** ✓ fixed
+`_MoveResult(Enum)` with `COMPLETE/PAUSED/ABANDONED` added to
+`QScanPattern.py`; all six comparison sites updated.
 
 ---
 
 ## Fragility
 
-**8. `QScanPattern.rect`, `vertices`, and `trajectory` crash when `polargraph is None`**
-`QScanPattern.py:164` — `rect` calls `self.polargraph.y0` without guarding.
-`RasterScan` and `PolarScan` both call `self.rect` through `vertices()` and
-`trajectory()`.  `TarzanScan` guards its geometry methods; the others don't.
-Resolution: add `if self.polargraph is None: return ...` guards consistent
-with `TarzanScan`, or raise a clear `RuntimeError`.
+**8. `QScanPattern.rect`, `vertices`, and `trajectory` crash when `polargraph is None`** ✓ fixed
+`polargraph` is now a required parameter (no `None` default).
+`QScanner.setupScanner` constructs the pattern with polargraph in one step.
+`QScanPatternWidget` no longer creates a default `PolarScan()` without hardware.
+All `polargraph is None` guards in `TarzanScan` removed.
 
-**9. `QScanner._SCAN_LOCKED` hardcodes widget attribute names**
-`QScanner.py:97` — The tuple `('center', 'home', 'polargraph', 'scanner')`
-must exactly match widget attribute names.  A subclass that renames or
-adds locked widgets must also update this tuple; a mismatch fails silently
-(the widget stays enabled when it should not).
-Resolution: replace with a method `_lockedWidgets() -> list` that subclasses
-can override explicitly.
+**9. `QScanner._SCAN_LOCKED` hardcodes widget attribute names** ✓ fixed
+Replaced with `_lockedWidgets() -> list`; subclasses extend via
+`super()._lockedWidgets() + [self.my_widget]`.
 
 ---
 
 ## Test coverage gaps
 
-**10. `QScanPattern._onMeasure` is untested**
-Added in the latest feature commit; no test verifies that it is called in
-the polling loop or that a subclass override is invoked.
+**10. `QScanPattern._onMeasure` is untested** ✓ fixed
+`test_onMeasure_subclass_override_called_during_scan` verifies the override
+is invoked with correct ``(t, x, y)`` types during a scan.
 
-**11. `QScanPattern.interruptAndClose` and `closeRequested` are untested**
-These are critical for clean application shutdown; a regression here would
-cause the app to hang on close.
+**11. `QScanPattern.interruptAndClose` and `closeRequested` are untested** ✓ fixed
+Three tests cover: IDLE → immediate emit, PAUSED → cleanup + emit,
+SCANNING → abandon + emit.
 
-**12. `QScanner._syncPatternThread` is untested**
-The deferred-retry logic that moves the scan pattern to the device thread
-is load-bearing for all real-hardware sessions.
+**12. `QScanner._syncPatternThread` is untested** ✓ fixed
+Three tests: no-op for fake device, no-op when device on main thread,
+and pattern moved when device is on a worker thread.
 
-**13. `RasterScan.trajectory` has no curvature test**
-The whole point of the implementation is that it produces *curved* paths.
-The existing tests verify shape and endpoints but not that the intermediate
-points are non-collinear.
+**13. `RasterScan.trajectory` has no curvature test** ✓ fixed
+`test_raster_trajectory_is_curved` asserts midpoint deviation > 1e-6 m
+from the straight-line chord.
 
 ---
 
 ## Minor style / consistency
 
-**14. `FakeMotors._acceleration` override needs a comment**
-`fake.py:23` — `FakeMotors.__init__` resets `_acceleration` to zeros after
-`super().__init__()` sets it to `[1000., 1000.]`.  The override is correct
-(fake hardware does not simulate trapezoidal ramp dynamics) but looks like
-an accidental reversion without a comment.
+**14. `FakeMotors._acceleration` override needs a comment** ✓ fixed
+Added inline comment: 'Zero acceleration: fake hardware moves at constant
+speed, no ramp.'
 
-**15. `Motors.process` is a public no-op**
-`Motors.py:159` — The method exists as a base-class hook but does nothing
-and has no documented contract for subclasses.  It shadows the parent's
-`process()` without adding behaviour.
-Resolution: remove it or make it private and document the override contract.
+**15. `Motors.process` is a public no-op** ✓ fixed
+Added NumPy-style docstring explaining it logs unsolicited serial data and
+documents the subclass override contract.
 
-**16. `main()` utilities embedded in library modules**
-`Motors.py:251`, `Polargraph.py:284` — Standalone driver scripts inside
-importable modules are unconventional and inflate the module's public
-footprint.
-Resolution: move to `examples/` or guard under `if __name__ == '__main__'`
-only (already done) with a note in the docstring that these are dev-only.
+**16. `main()` utilities embedded in library modules** ✓ fixed
+Added one-line docstring to both `Motors.main()` and `Polargraph.main()`
+marking them as dev-only smoke tests.

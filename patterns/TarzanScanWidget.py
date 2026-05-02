@@ -20,8 +20,14 @@ class TarzanScanWidget(QScanPatternWidget):
     ]
 
     def __init__(self, *args, pattern=None, **kwargs):
-        super().__init__(*args, pattern=pattern or TarzanScan(), **kwargs)
+        super().__init__(*args, pattern=pattern, **kwargs)
 
 
 if __name__ == '__main__':
-    TarzanScanWidget.example()
+    import sys
+    from qtpy import QtWidgets
+    from QPolargraph.hardware.fake import FakePolargraph
+    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
+    w = TarzanScanWidget(pattern=TarzanScan(polargraph=FakePolargraph()))
+    w.show()
+    sys.exit(app.exec())

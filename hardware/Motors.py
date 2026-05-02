@@ -158,6 +158,18 @@ class Motors(QSerialInstrument):
         return True
 
     def process(self, data: str) -> None:
+        '''Log unsolicited serial data from the Arduino at DEBUG level.
+
+        Called by :class:`QSerialInstrument` whenever the Arduino sends
+        a line that is not a direct response to a command (e.g. boot
+        messages or status updates).  Subclasses may override to act on
+        specific unsolicited messages.
+
+        Parameters
+        ----------
+        data : str
+            Raw line received from the serial port.
+        '''
         logger.debug(f' received: {data}')
 
     def goto(self, n1: int, n2: int) -> None:
@@ -192,12 +204,14 @@ class Motors(QSerialInstrument):
             logger.error('Error releasing stepper motors!')
 
     def running(self) -> bool:
-        '''Return ``True`` if the motors are currently moving.'''
-        if not self.isOpen():
-            return False
-        res = self.handshake('R')
-        status = res.split(':')[1] if ('R:' in res) else '0'
-        return status == '1'
+        '''Return ``True`` if the motors are currently moving.
+
+        Reads the running flag from the ``P`` (position) query, which
+        is the same source used by :attr:`~Polargraph.Polargraph.position`
+        during scan loops.  The firmware's ``R`` command remains available
+        for direct hardware queries but is not used here.
+        '''
+        return bool(self.indexes[2])
 
     @property
     def indexes(self) -> np.ndarray:
@@ -257,6 +271,7 @@ class Motors(QSerialInstrument):
 
 
 def main():
+    '''Dev-only smoke test: find motors (or fall back to fake) and make a move.'''
     from qtpy.QtCore import QCoreApplication
     import sys
 

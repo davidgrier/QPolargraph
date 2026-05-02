@@ -82,8 +82,6 @@ class TarzanScan(QScanPattern):
         period-1 regardless of ``x0``; adjust ``dy`` or ``height``
         until ``B ≠ 0``.
         '''
-        if self.polargraph is None:
-            return 0.
         x_left, y_top, x_right, y_bottom = self.rect
         h = self.polargraph.ell / 2.
         return 4. * h * x_right + y_top**2 - y_bottom**2
@@ -97,8 +95,6 @@ class TarzanScan(QScanPattern):
         Increase or decrease ``dy`` (or change ``height``) to break the
         degeneracy.
         '''
-        if self.polargraph is None:
-            return False
         scale = self.polargraph.ell * self.width
         return abs(self.tarzan_B) < 1e-9 * scale
 
@@ -116,7 +112,7 @@ class TarzanScan(QScanPattern):
           ``x0`` yields an aperiodic scan.
         * ``B = 0``: all ``x0`` are fixed points (degenerate geometry).
         '''
-        if self.polargraph is None or self.is_degenerate:
+        if self.is_degenerate:
             return None
         if abs(self.dx) < 1e-12:
             return None
@@ -219,17 +215,11 @@ class TarzanScan(QScanPattern):
         Iterates cycles starting from ``(x0, y_top)`` until the
         next starting x-position leaves ``[x_left, x_right]``.
 
-        Falls back to the base-class perimeter rectangle when no
-        polargraph is attached.
-
         Returns
         -------
         numpy.ndarray
             ``(nvertices, 2)`` array of ``(x, y)`` waypoints [m].
         '''
-        if self.polargraph is None:
-            return super().vertices()
-
         if self.is_degenerate:
             logger.warning(
                 'TarzanScan: degenerate geometry (B ≈ 0) — every cycle '
@@ -260,17 +250,11 @@ class TarzanScan(QScanPattern):
         this method samples each arc at :attr:`_TRAJECTORY_PTS` points
         for accurate display.
 
-        Falls back to the straight-line vertex path when no polargraph
-        is attached.
-
         Returns
         -------
         numpy.ndarray
             ``(2, npts)`` array of ``(x, y)`` coordinates [m].
         '''
-        if self.polargraph is None:
-            return super().trajectory()
-
         L, R = self._pulley_positions()
         # Segments within each cycle alternate: R, L, R, L
         centers = [R, L, R, L]

@@ -190,8 +190,8 @@ def test_polar_trajectory_lengths_match(polar):
 
 # --- TarzanScan ---
 
-def test_tarzan_x0_default():
-    t = TarzanScan()
+def test_tarzan_x0_default(polargraph):
+    t = TarzanScan(polargraph=polargraph)
     assert t.x0 == 0.0
 
 
@@ -478,3 +478,49 @@ def test_home_after_pause_abandons_trajectory(scan):
     scan.home()
     assert scan._state == ScanState.IDLE
     assert scan._paused_vertices is None
+
+
+# --- _onMeasure hook ---
+
+def test_onMeasure_subclass_override_called_during_scan(pg):
+    class MeasuringScan(QScanPattern):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.calls = []
+
+        def _onMeasure(self, t: float, x: float, y: float) -> None:
+            self.calls.append((t, x, y))
+
+    s = MeasuringScan(polargraph=pg)
+    s.scan()
+    assert len(s.calls) > 0
+    t, x, y = s.calls[0]
+    assert isinstance(t, float)
+    assert isinstance(x, float)
+    assert isinstance(y, float)
+
+
+# --- interruptAndClose / closeRequested ---
+
+def test_interrupt_and_close_from_idle_emits_close_requested(scan, qtbot):
+    with qtbot.waitSignal(scan.closeRequested, timeout=1000):
+        scan.interruptAndClose()
+    assert scan._state == ScanState.IDLE
+
+
+def test_interrupt_and_close_from_paused_emits_close_requested(scan, qtbot):
+    from qtpy.QtCore import QTimer
+    QTimer.singleShot(0, scan.pause)
+    scan.scan()
+    assert scan._state == ScanState.PAUSED
+    with qtbot.waitSignal(scan.closeRequested, timeout=1000):
+        scan.interruptAndClose()
+    assert scan._state == ScanState.IDLE
+
+
+def test_interrupt_and_close_during_scan_emits_close_requested(scan, qtbot):
+    from qtpy.QtCore import QTimer
+    QTimer.singleShot(0, scan.interruptAndClose)
+    with qtbot.waitSignal(scan.closeRequested, timeout=5000):
+        scan.scan()
+    assert scan._state == ScanState.IDLE

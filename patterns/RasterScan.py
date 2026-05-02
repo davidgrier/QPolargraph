@@ -36,9 +36,6 @@ class RasterScan(QScanPattern):
         in step-index space and converts them back to Cartesian coordinates,
         giving an accurate picture of the true scan path.
 
-        Falls back to the straight-line vertex path if no polargraph is
-        attached.
-
         Returns
         -------
         numpy.ndarray

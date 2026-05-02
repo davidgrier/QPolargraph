@@ -27,6 +27,12 @@ class ScanState(Enum):
     SCANNING = auto()
     PAUSED = auto()
 
+
+class _MoveResult(Enum):
+    COMPLETE = auto()
+    PAUSED = auto()
+    ABANDONED = auto()
+
 # TODO: Should the role of QScanPattern be played by a subclass
 # of Polargraph? The subclass would be a Polargraph with a built-in
 # scan pattern. This might simplify application design
@@ -97,7 +103,7 @@ class QScanPattern(QtCore.QObject):
                  dx: float = 0.,
                  dy: float = 0.1,
                  step: float = 5,
-                 polargraph: Polargraph | None = None,
+                 polargraph: Polargraph,
                  **kwargs):
         super().__init__(**kwargs)
         self._width = width
@@ -223,7 +229,7 @@ class QScanPattern(QtCore.QObject):
         self._pre_pause_state = None
         self._continuation = None
 
-    def _moveTo(self, vertices) -> str:
+    def _moveTo(self, vertices) -> _MoveResult:
         '''Move through a sequence of waypoints.
 
         Parameters
@@ -233,11 +239,9 @@ class QScanPattern(QtCore.QObject):
 
         Returns
         -------
-        str
-            ``'complete'``, ``'paused'``, or ``'abandoned'``.
+        _MoveResult
+            ``COMPLETE`` or ``PAUSED``.
         '''
-        if self.polargraph is None:
-            return 'abandoned'
         for i, vertex in enumerate(vertices):
             self.polargraph.moveTo(*vertex)
             while True:
@@ -246,12 +250,12 @@ class QScanPattern(QtCore.QObject):
                     self.polargraph.stop()
                     self.polargraph.release()
                     self._abandon = False
-                    return 'abandoned'
+                    return _MoveResult.ABANDONED
                 if self._paused:
                     self.polargraph.stop()
                     self._paused_vertices = [vertices[j]
                                              for j in range(i, len(vertices))]
-                    return 'paused'
+                    return _MoveResult.PAUSED
                 x, y, moving = self.polargraph.position
                 t = time.monotonic()
                 self._onMeasure(t, x, y)
@@ -259,7 +263,7 @@ class QScanPattern(QtCore.QObject):
                 if not moving:
                     break
         self.polargraph.release()
-        return 'complete'
+        return _MoveResult.COMPLETE
 
     def _onMeasure(self, t: float, x: float, y: float) -> None:
         '''Called at each position poll, before :attr:`dataReady` is emitted.
@@ -321,9 +325,9 @@ class QScanPattern(QtCore.QObject):
         vertices = list(self.vertices())
         self._setState(ScanState.MOVING)
         result = self._moveTo([vertices[0]])
-        if result == 'complete':
+        if result == _MoveResult.COMPLETE:
             self._continueScan(vertices[1:])
-        elif result == 'paused':
+        elif result == _MoveResult.PAUSED:
             self._pre_pause_state = ScanState.MOVING
             self._continuation = lambda: self._continueScan(vertices[1:])
             self._setState(ScanState.PAUSED)
@@ -333,9 +337,9 @@ class QScanPattern(QtCore.QObject):
     def _continueScan(self, remaining: list) -> None:
         self._setState(ScanState.SCANNING)
         result = self._moveTo(remaining)
-        if result == 'complete':
+        if result == _MoveResult.COMPLETE:
             self._homeAfterScan()
-        elif result == 'paused':
+        elif result == _MoveResult.PAUSED:
             self._pre_pause_state = ScanState.SCANNING
             self._continuation = self._homeAfterScan
             self._setState(ScanState.PAUSED)
@@ -345,9 +349,9 @@ class QScanPattern(QtCore.QObject):
     def _homeAfterScan(self) -> None:
         self._setState(ScanState.MOVING)
         result = self._moveTo([[0., self.polargraph.y0]])
-        if result == 'complete':
+        if result == _MoveResult.COMPLETE:
             self._setIdle()
-        elif result == 'paused':
+        elif result == _MoveResult.PAUSED:
             self._pre_pause_state = ScanState.MOVING
             self._continuation = self._setIdle
             self._setState(ScanState.PAUSED)
@@ -385,12 +389,12 @@ class QScanPattern(QtCore.QObject):
         self._setState(saved_state)
         result = self._moveTo(saved_vertices)
 
-        if result == 'complete':
+        if result == _MoveResult.COMPLETE:
             if continuation:
                 continuation()
             else:
                 self._setIdle()
-        elif result == 'paused':
+        elif result == _MoveResult.PAUSED:
             self._pre_pause_state = saved_state
             self._continuation = continuation
             self._setState(ScanState.PAUSED)

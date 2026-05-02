@@ -290,6 +290,7 @@ class Polargraph(Motors):
 
 
 def main():
+    '''Dev-only smoke test: find polargraph (or fall back to fake) and make a move.'''
     from qtpy.QtCore import QCoreApplication
     import sys
 

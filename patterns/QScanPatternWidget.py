@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from qtpy import QtCore, QtWidgets
-from QPolargraph.patterns.PolarScan import PolarScan
 from QPolargraph.patterns.QScanPattern import QScanPattern
 
 
@@ -83,7 +82,8 @@ class QScanPatternWidget(QtWidgets.QWidget):
         self._pattern = None
         self.setupUi()
         self._connectSignals()
-        self.pattern = pattern or PolarScan()
+        if pattern is not None:
+            self.pattern = pattern
 
     def setupUi(self) -> None:
         layout = QtWidgets.QGridLayout(self)
@@ -161,8 +161,10 @@ class QScanPatternWidget(QtWidgets.QWidget):
     @classmethod
     def example(cls) -> None:
         import sys
+        from QPolargraph.hardware.fake import FakePolargraph
+        from QPolargraph.patterns.PolarScan import PolarScan
         app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
-        widget = cls()
+        widget = cls(pattern=PolarScan(polargraph=FakePolargraph()))
         widget.show()
         sys.exit(app.exec())
 

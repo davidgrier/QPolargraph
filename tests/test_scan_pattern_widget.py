@@ -1,4 +1,5 @@
 import pytest
+from QPolargraph.hardware.fake import FakePolargraph
 from QPolargraph.patterns.QScanPatternWidget import QScanPatternWidget
 from QPolargraph.patterns.TarzanScanWidget import TarzanScanWidget
 from QPolargraph.patterns.RasterScan import RasterScan
@@ -8,7 +9,8 @@ from QPolargraph.patterns.TarzanScan import TarzanScan
 
 @pytest.fixture
 def widget(qtbot):
-    w = QScanPatternWidget()
+    pg = FakePolargraph(step_delay=0.)
+    w = QScanPatternWidget(pattern=PolarScan(polargraph=pg))
     qtbot.addWidget(w)
     return w
 
@@ -24,7 +26,7 @@ def test_spinboxes_initialized_from_pattern(widget):
 
 
 def test_set_pattern_syncs_spinboxes(widget):
-    raster = RasterScan()
+    raster = RasterScan(polargraph=FakePolargraph(step_delay=0.))
     raster.width = 0.3
     widget.pattern = raster
     assert widget.width.value() == pytest.approx(0.3)
@@ -71,7 +73,8 @@ def test_settings_setter_ignores_unknown_keys(widget):
 
 @pytest.fixture
 def tarzan_widget(qtbot):
-    w = TarzanScanWidget()
+    pg = FakePolargraph(step_delay=0.)
+    w = TarzanScanWidget(pattern=TarzanScan(polargraph=pg))
     qtbot.addWidget(w)
     return w
 
@@ -90,7 +93,7 @@ def test_tarzan_x0_spinbox_updates_pattern(tarzan_widget):
 
 
 def test_tarzan_pattern_x0_syncs_to_spinbox(tarzan_widget):
-    t = TarzanScan()
+    t = TarzanScan(polargraph=FakePolargraph(step_delay=0.))
     t.x0 = 0.07
     tarzan_widget.pattern = t
     assert tarzan_widget.x0.value() == pytest.approx(0.07)

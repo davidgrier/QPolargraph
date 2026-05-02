@@ -101,7 +101,6 @@ class QScanner(QtWidgets.QMainWindow):
 
     SCAN_PATTERN = PolarScan
     SCAN_WIDGET = QScanPatternWidget
-    _SCAN_LOCKED = ('center', 'home', 'polargraph', 'scanner')
 
     def __init__(self, *args,
                  configdir: str | None = None,
@@ -122,9 +121,9 @@ class QScanner(QtWidgets.QMainWindow):
         self.polargraph = QPolargraphWidget(device=device)
 
     def setupScanner(self, pattern: type | None) -> None:
-        self.scanner = self.SCAN_WIDGET()
-        self.scanner.pattern = (pattern or self.SCAN_PATTERN)()
-        self.scanner.pattern.polargraph = self.polargraph.device
+        pg = self.polargraph.device
+        scan_pattern = (pattern or self.SCAN_PATTERN)(polargraph=pg)
+        self.scanner = self.SCAN_WIDGET(pattern=scan_pattern)
 
     def configure(self, configdir: str | None) -> None:
         configdir = configdir or f'~/.{type(self).__name__}'
@@ -267,10 +266,21 @@ class QScanner(QtWidgets.QMainWindow):
         y = [0., yp, 0.]
         self.beltPlot.setData(x, y)
 
+    def _lockedWidgets(self) -> list:
+        '''Widgets disabled during MOVING and SCANNING states.
+
+        Subclasses that add controls which should also be locked during a
+        scan can extend this list::
+
+            def _lockedWidgets(self):
+                return super()._lockedWidgets() + [self.my_widget]
+        '''
+        return [self.center, self.home, self.polargraph, self.scanner]
+
     def _onStateChanged(self, state: ScanState) -> None:
         locked = state in (ScanState.MOVING, ScanState.SCANNING)
-        for name in self._SCAN_LOCKED:
-            getattr(self, name).setEnabled(not locked)
+        for widget in self._lockedWidgets():
+            widget.setEnabled(not locked)
         if state == ScanState.IDLE:
             self.scan.setText('Scan')
             self.scan.setEnabled(True)

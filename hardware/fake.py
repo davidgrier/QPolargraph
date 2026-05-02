@@ -20,6 +20,7 @@ class FakeMotors(QFakeInstrument, Motors):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
+        # Zero acceleration: fake hardware moves at constant speed, no ramp.
         self._acceleration = np.zeros(2)
 
     def identify(self) -> bool:
