@@ -1,6 +1,54 @@
 Changelog
 =========
 
+1.4.0 (2026-05-02)
+------------------
+
+- ``Polargraph.moveTo``: replaced proportional-speed formula with an
+  acceleration-aware calculation that ensures both motors arrive
+  simultaneously despite AccelStepper's trapezoidal ramp times.  The
+  faster motor runs at full ``speed``; the slower motor's speed is solved
+  from the arrival-time equation, using the triangular profile
+  ``t = 2√(n/a)`` for short moves that never reach ``speed``, and the
+  trapezoidal profile ``t = n/v + v/a`` otherwise.  The correction
+  eliminates the arc-shaped deviation that occurred during inter-arc
+  transitions in ``PolarScan`` when one motor finished its ramp before
+  the other.  New module-level helpers ``_motor_time`` and ``_sync_speed``
+  implement the calculation.
+- ``Motors.__init__``: initialise ``_acceleration`` to ``[1000., 1000.]``
+  to match the acam3 firmware default (``stepper1/2.setAcceleration(1000.0)``
+  in ``setup()``), so the timing correction activates automatically without
+  the user having to call ``self.acceleration = [...]``.
+  ``FakeMotors`` resets acceleration to zero so fake hardware falls back
+  to proportional speeds unchanged.
+- ``Polargraph``: added ``r2f`` (continuous step-index conversion) and
+  ``r2i`` (integer step-index conversion) as explicit methods, replacing
+  the inline computation previously duplicated across ``moveTo`` and
+  ``i2r``.
+- ``QScanPattern``: redesigned as a four-state machine (``IDLE``,
+  ``MOVING``, ``SCANNING``, ``PAUSED``).  Replaced the ``moveFinished``
+  and ``scanFinished`` signals with a single ``stateChanged(ScanState)``
+  signal.  Added ``pause()``, ``resume()``, ``abandon()``,
+  ``toggle()``, and ``interruptAndClose()`` slots; added ``scanning()``,
+  ``moving()``, and ``active()`` predicates.  The ``_moveTo`` engine
+  returns ``'complete'``, ``'paused'``, or ``'abandoned'`` and handles
+  the continuation-callable pattern so ``resume()`` re-enters the correct
+  scan phase after a pause.  Motors are not released on pause (hold
+  position).
+- ``QScanner``: updated for the new ``QScanPattern`` state machine.
+  Button text and enabled state are driven entirely by ``stateChanged``.
+  Added ``_toggle`` and ``_interruptClose`` private signals for safe
+  cross-thread dispatch to the scan pattern.  Added ``_syncPatternThread``
+  to move the scan pattern to the polargraph device thread after
+  ``QPolargraphWidget._firstShow`` has completed, eliminating
+  ``QSocketNotifier`` cross-thread errors and serial corruption with
+  real hardware.  ``plotBelt`` caches the last emitted position so it
+  never reads ``polargraph.position`` from the GUI thread.
+- ``FakePolargraph.position``: fixed position tracking during
+  ``stop()`` — ``_store['indexes']`` is now updated at each consumed
+  trajectory step so the stored position matches the actual simulated
+  position after a mid-trajectory halt.
+
 1.3.3 (2026-04-29)
 ------------------
 
