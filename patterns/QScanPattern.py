@@ -368,6 +368,21 @@ class QScanPattern(QtCore.QObject):
             self._setIdle()
 
     @QtCore.Slot()
+    def toggle(self) -> None:
+        '''Start, pause, or resume based on current state.
+
+        Calling this slot from any thread is safe: it is the preferred
+        way for the GUI to drive the scan state machine.  Connects to
+        the Scan/Pause/Resume button.
+        '''
+        if self._state == ScanState.IDLE:
+            self.scan()
+        elif self._state == ScanState.PAUSED:
+            self.resume()
+        else:
+            self.pause()
+
+    @QtCore.Slot()
     def abandon(self) -> None:
         '''Abandon the current trajectory and return to IDLE.
 
@@ -382,6 +397,7 @@ class QScanPattern(QtCore.QObject):
         elif self._state != ScanState.IDLE:
             self._abandon = True
 
+    @QtCore.Slot()
     def interruptAndClose(self) -> None:
         '''Abandon motion and emit :attr:`closeRequested` on reaching IDLE.
 

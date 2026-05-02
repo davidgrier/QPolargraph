@@ -89,6 +89,8 @@ class QScanner(QtWidgets.QMainWindow):
     '''
 
     dataReady = QtCore.Signal(dict)
+    _toggle = QtCore.Signal()
+    _interruptClose = QtCore.Signal()
 
     SCAN_PATTERN = PolarScan
     SCAN_WIDGET = QScanPatternWidget
@@ -100,6 +102,7 @@ class QScanner(QtWidgets.QMainWindow):
                  pattern: type | None = None,
                  **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self._belt_pos = None
         self.setupPolargraph(fake)
         self.setupScanner(pattern)
         self.configure(configdir)
@@ -220,10 +223,14 @@ class QScanner(QtWidgets.QMainWindow):
         self.scanner.pattern.dataReady.connect(self._onDataReady)
         self.scanner.pattern.stateChanged.connect(self._onStateChanged)
         self.scanner.pattern.closeRequested.connect(self._onCloseRequested)
+        self._toggle.connect(self.scanner.pattern.toggle)
+        self._interruptClose.connect(self.scanner.pattern.interruptAndClose)
 
         self.scan.clicked.connect(self.toggleScan)
         self.center.clicked.connect(self.scanner.pattern.center)
         self.home.clicked.connect(self.scanner.pattern.home)
+
+        QtCore.QTimer.singleShot(0, self._syncPatternThread)
 
         self.actionSaveSettings.triggered.connect(self.saveSettings)
         self.actionRestoreSettings.triggered.connect(self.restoreSettings)
@@ -243,11 +250,14 @@ class QScanner(QtWidgets.QMainWindow):
     def plotBelt(self, data: np.ndarray | None = None) -> None:
         p = self.polargraph.device
         if data is not None:
-            xp, yp = data[0], data[1]
+            xp, yp = float(data[0]), float(data[1])
+            self._belt_pos = (xp, yp)
+        elif self._belt_pos is not None:
+            xp, yp = self._belt_pos
         else:
-            xp, yp, _ = p.position
-        x = [-p.ell / 2., xp, p.ell / 2]
-        y = [0, yp, 0]
+            xp, yp = 0., p.y0
+        x = [-p.ell / 2., xp, p.ell / 2.]
+        y = [0., yp, 0.]
         self.beltPlot.setData(x, y)
 
     def _onStateChanged(self, state: ScanState) -> None:
@@ -268,14 +278,32 @@ class QScanner(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def toggleScan(self) -> None:
-        state = self.scanner.pattern._state
-        if state == ScanState.IDLE:
-            self.showStatus('Scanning...')
-            self.scanner.pattern.scan()
-        elif state == ScanState.PAUSED:
-            self.scanner.pattern.resume()
-        else:
-            self.scanner.pattern.pause()
+        '''Emit the toggle signal to start, pause, or resume the scan.
+
+        Routes through ``_toggle`` so the call is delivered as a
+        ``QueuedConnection`` when the scan pattern lives in a worker
+        thread (real hardware), or as a ``DirectConnection`` in tests.
+        '''
+        self._toggle.emit()
+
+    def _syncPatternThread(self) -> None:
+        '''Move the scan pattern to the polargraph device thread.
+
+        Called once, deferred, after construction so that
+        ``QPolargraphWidget._firstShow`` has had time to run and move
+        the serial device to its worker thread.  No-ops for fake
+        instruments (which stay on the main thread).  Retries every
+        50 ms until the device has actually moved.
+        '''
+        from QInstrument.lib.QSerialInstrument import QSerialInstrument
+        if not isinstance(self.polargraph.device, QSerialInstrument):
+            return
+        device_thread = self.polargraph.device.thread()
+        if device_thread is QtCore.QThread.currentThread():
+            QtCore.QTimer.singleShot(50, self._syncPatternThread)
+            return
+        if self.scanner.pattern.thread() is not device_thread:
+            self.scanner.pattern.moveToThread(device_thread)
 
     @QtCore.Slot(object)
     def _onDataReady(self, pos: np.ndarray) -> None:
@@ -329,7 +357,7 @@ class QScanner(QtWidgets.QMainWindow):
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         logger.debug(f'Closing: {event.type()}')
         if self.scanner.pattern.active():
-            self.scanner.pattern.interruptAndClose()
+            self._interruptClose.emit()
             event.ignore()
             return
         self.saveSettings()
