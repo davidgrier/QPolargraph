@@ -172,7 +172,7 @@ class Polargraph(Motors):
         '''Belt length from pulley to payload at the home position [m].'''
         return np.hypot(self.ell/2., self.y0)
 
-    def r2f(self, x: float, y: float) -> tuple(float, float):
+    def r2f(self, x: float, y: float) -> tuple[float, float]:
         '''Convert Cartesian coordinates to continuous step indexes.
 
         This is the exact (non-rounded) inverse of :meth:`i2r`, useful
@@ -197,7 +197,7 @@ class Polargraph(Motors):
         n = (self.s0 - sn) / self.ds
         return m, n
 
-    def r2i(self, x: float, y: float) -> tuple(int, int):
+    def r2i(self, x: float, y: float) -> tuple[int, int]:
         '''Convert Cartesian coordinates to integer motor step indexes.
 
         Parameters

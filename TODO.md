@@ -13,14 +13,14 @@ runtime *calls*, not annotations.  Python evaluates them eagerly and silently
 stores the result; mypy and IDEs never see the intended type.
 Resolution: `-> tuple[float, float]` and `-> tuple[int, int]`.
 
-**2. `i2r` signature conflates position with extra payload via `*args`**
-`Polargraph.py:217` — `i2r(m, n, *args) -> np.ndarray` appends whatever
-is in `*args` to the returned array.  `position` calls `i2r(*self.indexes)`,
-passing the running flag as `args[0]`, so the return length varies with the
-caller.  This makes the return type unannotatable and surprises readers.
-Resolution: have `position` append the running flag itself rather than
-delegating through `i2r`; fix `i2r` to return a plain `(x, y)` pair with
-a proper type annotation.
+**2. `i2r` return annotation is imprecise**
+`Polargraph.py:217` — `i2r(m, n, *args) -> np.ndarray` appends `*args`
+to the result, so the return length is caller-determined.  The `*args`
+pass-through is intentional: `position` calls `i2r(*self.indexes)` to
+carry the running flag without a separate field.  The annotation
+`-> np.ndarray` is accurate but conveys nothing about the shape.
+Resolution (optional): add a docstring note that `len(result) == 2 + len(args)`
+and that callers control the payload via `*args`.
 
 ---
 
