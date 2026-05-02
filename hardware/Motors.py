@@ -110,7 +110,8 @@ class Motors(QSerialInstrument):
 
     def __init__(self, portName: str | None = None, **kwargs):
         super().__init__(portName, **(self.comm | kwargs))
-        self._acceleration = np.zeros(2)
+        # Matches acam3.ino setup(): stepper1/2.setAcceleration(1000.0)
+        self._acceleration = np.array([1000., 1000.])
 
     def _registerProperties(self) -> None:
         super()._registerProperties()

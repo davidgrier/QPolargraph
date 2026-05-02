@@ -26,6 +26,11 @@ class ScanState(Enum):
     SCANNING = auto()
     PAUSED = auto()
 
+# TODO: Should the role of QScanPattern be played by a subclass
+# of Polargraph? The subclass would be a Polargraph with a built-in
+# scan pattern. This might simplify application design
+# by eliminating the need to connect signals and slots between
+# the scan pattern and the hardware interface.
 
 class QScanPattern(QtCore.QObject):
 

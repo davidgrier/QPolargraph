@@ -4,6 +4,34 @@ import numpy as np
 import logging
 
 
+def _motor_time(v: float, n: float, a: float) -> float:
+    '''Move time for AccelStepper trapezoidal motion profile.
+
+    Uses triangular profile when *v* exceeds the natural peak speed
+    ``sqrt(a*n)``, otherwise trapezoidal.
+    '''
+    if v >= np.sqrt(a * n):
+        return 2. * np.sqrt(n / a)
+    return v / a + n / v
+
+
+def _sync_speed(v_fast: float, n_fast: float, n_slow: float,
+                a_fast: float, a_slow: float) -> float:
+    '''Speed for the slower motor that ensures simultaneous arrival.
+
+    Accounts for AccelStepper ramp times.  Falls back to proportional
+    speed when acceleration is unknown (zero).
+    '''
+    if a_fast <= 0. or a_slow <= 0.:
+        return v_fast * n_slow / n_fast
+    T = _motor_time(v_fast, n_fast, a_fast)
+    disc = (a_slow * T) ** 2 - 4. * a_slow * n_slow
+    if disc < 0.:
+        return v_fast * n_slow / n_fast
+    v_slow = (a_slow * T - np.sqrt(disc)) / 2.
+    return max(v_slow, 1.)
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -221,7 +249,8 @@ class Polargraph(Motors):
         '''Move the payload to position ``(x, y)`` [m].
 
         Computes the target step indexes and adjusts both motor speeds
-        so they complete their moves simultaneously.
+        so they complete their moves simultaneously, accounting for
+        AccelStepper trapezoidal ramp times.
 
         Parameters
         ----------
@@ -232,14 +261,21 @@ class Polargraph(Motors):
         '''
         m0, n0, _ = self.indexes
         m1, n1 = self.r2i(x, y)
+        dm = float(m1 - m0)
+        dn = float(n1 - n0)
 
-        if m0 == m1 or n0 == n1:
+        if dm == 0. or dn == 0.:
             vm, vn = self.speed, self.speed
         else:
-            f = (float(n1 - n0) / float(m1 - m0)) ** 2
-            vm = self.speed / np.sqrt(1. + f)
-            vn = np.sqrt(f) * vm
-        logger.debug(f'Motor speeds: ({vm}, {vn})')
+            abs_dm, abs_dn = abs(dm), abs(dn)
+            am, an = self.acceleration
+            if abs_dm >= abs_dn:
+                vm = self.speed
+                vn = _sync_speed(self.speed, abs_dm, abs_dn, am, an)
+            else:
+                vn = self.speed
+                vm = _sync_speed(self.speed, abs_dn, abs_dm, an, am)
+        logger.debug(f'Motor speeds: ({vm:.1f}, {vn:.1f})')
         self.motor_speed = [vm, vn]
         logger.debug(f'Path: ({m0}, {n0}) --> ({m1}, {n1})')
         self.goto(m1, n1)
