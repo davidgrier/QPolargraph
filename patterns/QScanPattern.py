@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 from qtpy import QtCore
 from qtpy.QtCore import QCoreApplication
 import numpy as np
+import time
 import logging
 
 if TYPE_CHECKING:
@@ -69,9 +70,13 @@ class QScanPattern(QtCore.QObject):
     Signals
     -------
     dataReady(numpy.ndarray)
-        Emitted with ``(x, y)`` [m] at every position poll during
-        motion (MOVING and SCANNING states).  Connect to belt animation
-        and, gated on :meth:`scanning`, to instrument data collection.
+        Emitted with ``(x, y, t)`` — Cartesian position [m] and a
+        :func:`time.monotonic` timestamp [s] — at every position poll
+        during motion (MOVING and SCANNING states).  ``t`` allows
+        post-processing correlation with independently sampled
+        instruments.  Connect to belt animation and, gated on
+        :meth:`scanning`, to instrument data collection.  (Callers that
+        only need ``x, y`` may ignore ``data[2]``.)
     stateChanged(ScanState)
         Emitted on every state-machine transition.  Subsumes the former
         ``moveFinished`` and ``scanFinished`` signals.
@@ -248,11 +253,31 @@ class QScanPattern(QtCore.QObject):
                                              for j in range(i, len(vertices))]
                     return 'paused'
                 x, y, moving = self.polargraph.position
-                self.dataReady.emit(np.array([x, y]))
+                t = time.monotonic()
+                self._onMeasure(t, x, y)
+                self.dataReady.emit(np.array([x, y, t]))
                 if not moving:
                     break
         self.polargraph.release()
         return 'complete'
+
+    def _onMeasure(self, t: float, x: float, y: float) -> None:
+        '''Called at each position poll, before :attr:`dataReady` is emitted.
+
+        Runs in the polargraph device thread.  Override in subclasses to
+        trigger a synchronous instrument read that should be associated
+        with position ``(x, y)`` at time ``t``.  The default
+        implementation is a no-op.
+
+        Parameters
+        ----------
+        t : float
+            Timestamp from :func:`time.monotonic` [s].
+        x : float
+            Current horizontal coordinate [m].
+        y : float
+            Current vertical coordinate [m].
+        '''
 
     @QtCore.Slot()
     def home(self) -> None:

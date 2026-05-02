@@ -70,13 +70,20 @@ class QScanner(QtWidgets.QMainWindow):
     -------
     dataReady(dict)
         Emitted at each position during a scan.  The base class emits
-        ``{'x': float, 'y': float}`` [m].  Subclasses may override
+        ``{'t': float, 'x': float, 'y': float}`` where ``t`` is a
+        :func:`time.monotonic` timestamp [s] and ``x``, ``y`` are
+        Cartesian coordinates [m].  Subclasses may override
         :meth:`_onDataReady` to merge in additional measurement fields
-        before emitting, e.g.::
+        before emitting.  Because ``_onDataReady`` runs on the GUI
+        thread, instrument reads there should be fast and non-blocking;
+        for tight timing call the instrument inside
+        :meth:`~QPolargraph.QScanPattern.QScanPattern._onMeasure`
+        instead (runs in the polargraph device thread)::
 
             def _onDataReady(self, pos: np.ndarray) -> None:
                 self.dataReady.emit(
-                    {'x': float(pos[0]), 'y': float(pos[1])}
+                    {'t': float(pos[2]), 'x': float(pos[0]),
+                     'y': float(pos[1])}
                     | self.instrument.acquire())
 
         A sequence of emitted dicts can be collected directly into a
@@ -308,7 +315,9 @@ class QScanner(QtWidgets.QMainWindow):
     @QtCore.Slot(object)
     def _onDataReady(self, pos: np.ndarray) -> None:
         if self.scanner.pattern.scanning():
-            self.dataReady.emit({'x': float(pos[0]), 'y': float(pos[1])})
+            self.dataReady.emit({'t': float(pos[2]),
+                                 'x': float(pos[0]),
+                                 'y': float(pos[1])})
 
     def plotData(self, x: npt.ArrayLike, y: npt.ArrayLike,
                  hue: npt.ArrayLike,

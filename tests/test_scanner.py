@@ -72,9 +72,11 @@ def test_data_ready_signal(scanner, qtbot):
     received = []
     scanner.dataReady.connect(received.append)
     scanner.scanner.pattern._state = ScanState.SCANNING
-    scanner._onDataReady(np.array([0.1, 0.2]))
+    scanner._onDataReady(np.array([0.1, 0.2, 1.5]))
     assert len(received) == 1
-    assert received[0] == {'x': pytest.approx(0.1), 'y': pytest.approx(0.2)}
+    assert received[0] == {'t': pytest.approx(1.5),
+                           'x': pytest.approx(0.1),
+                           'y': pytest.approx(0.2)}
 
 
 def test_update_plot_does_not_raise(scanner):
