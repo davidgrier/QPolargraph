@@ -237,8 +237,8 @@ class Polargraph(Motors):
             vm, vn = self.speed, self.speed
         else:
             f = (float(n1 - n0) / float(m1 - m0)) ** 2
-            vn = self.speed / np.sqrt(1. + f)
-            vm = np.sqrt(f) * vn
+            vm = self.speed / np.sqrt(1. + f)
+            vn = np.sqrt(f) * vm
         logger.debug(f'Motor speeds: ({vm}, {vn})')
         self.motor_speed = [vm, vn]
         logger.debug(f'Path: ({m0}, {n0}) --> ({m1}, {n1})')

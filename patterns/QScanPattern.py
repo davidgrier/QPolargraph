@@ -16,13 +16,15 @@ logger = logging.getLogger(__name__)
 class ScanState(Enum):
     '''State of the scan pattern motion controller.
 
-    IDLE    : No motion in progress; instruments are inactive.
-    MOVING  : Moving but not collecting data (initial positioning or homing).
-    SCANNING: Moving and collecting data.
+    IDLE     : No motion in progress.
+    MOVING   : Moving without collecting data (positioning or homing).
+    SCANNING : Moving and collecting data.
+    PAUSED   : Motion suspended; trajectory is saved for resumption.
     '''
     IDLE = auto()
     MOVING = auto()
     SCANNING = auto()
+    PAUSED = auto()
 
 
 class QScanPattern(QtCore.QObject):
@@ -33,15 +35,16 @@ class QScanPattern(QtCore.QObject):
     sequence of waypoints. Subclasses override :meth:`vertices` and
     :meth:`trajectory` to define different scan patterns.
 
-    The motion controller is always in one of three states
+    The motion controller is always in one of four states
     (:class:`ScanState`):
 
-    * **IDLE** — no motion; :meth:`scanning` and :meth:`moving` both
-      return ``False``.
+    * **IDLE** — no motion.
     * **MOVING** — positioning to the scan start or returning home;
-      :meth:`moving` returns ``True``, :meth:`scanning` returns ``False``.
-    * **SCANNING** — actively scanning and emitting data; both
-      :meth:`moving` and :meth:`scanning` return ``True``.
+      data are not collected.
+    * **SCANNING** — actively scanning; :meth:`dataReady` is emitted
+      at each position poll.
+    * **PAUSED** — motion suspended; the remaining trajectory is saved
+      and the polargraph holds its current position.
 
     Properties
     ----------
@@ -61,22 +64,21 @@ class QScanPattern(QtCore.QObject):
     Signals
     -------
     dataReady(numpy.ndarray)
-        Emitted with the current ``(x, y)`` position during a move.
-    moveFinished()
-        Emitted when a :meth:`moveTo` call completes.
-    scanFinished()
-        Emitted when a full :meth:`scan` completes (including the return
-        to home, if applicable).
+        Emitted with ``(x, y)`` [m] at every position poll during
+        motion (MOVING and SCANNING states).  Connect to belt animation
+        and, gated on :meth:`scanning`, to instrument data collection.
+    stateChanged(ScanState)
+        Emitted on every state-machine transition.  Subsumes the former
+        ``moveFinished`` and ``scanFinished`` signals.
     closeRequested()
         Emitted when the state returns to IDLE after
         :meth:`interruptAndClose` was called.  Connect to the
-        application window's ``close()`` slot with a
-        ``QueuedConnection`` to shut down cleanly after all motion stops.
+        application window's ``close()`` slot to shut down cleanly
+        after all motion stops.
     '''
 
     dataReady = QtCore.Signal(np.ndarray)
-    moveFinished = QtCore.Signal()
-    scanFinished = QtCore.Signal()
+    stateChanged = QtCore.Signal(object)
     closeRequested = QtCore.Signal()
 
     def __init__(self, *args,
@@ -95,8 +97,12 @@ class QScanPattern(QtCore.QObject):
         self._step = step
         self.polargraph = polargraph
         self._state = ScanState.IDLE
-        self._interrupt = False
+        self._paused = False
+        self._abandon = False
         self._closing = False
+        self._paused_vertices = None
+        self._pre_pause_state = None
+        self._continuation = None
 
     @property
     def width(self) -> float:
@@ -173,8 +179,7 @@ class QScanPattern(QtCore.QObject):
         Returns
         -------
         numpy.ndarray
-            ``(2, npts)`` array of ``(x, y)`` coordinates [m],
-            suitable for plotting.
+            ``(2, npts)`` array of ``(x, y)`` coordinates [m].
         '''
         return self.vertices().T
 
@@ -184,64 +189,32 @@ class QScanPattern(QtCore.QObject):
 
     def moving(self) -> bool:
         '''Return ``True`` if the scanner is in motion (MOVING or SCANNING).'''
+        return self._state in (ScanState.MOVING, ScanState.SCANNING)
+
+    def active(self) -> bool:
+        '''Return ``True`` if the scanner is in any non-IDLE state.'''
         return self._state != ScanState.IDLE
 
+    def _setState(self, state: ScanState) -> None:
+        if state != self._state:
+            self._state = state
+            self.stateChanged.emit(state)
+
     def _setIdle(self) -> None:
-        '''Transition to IDLE and emit closeRequested if a close is pending.'''
-        self._state = ScanState.IDLE
+        self._setState(ScanState.IDLE)
         if self._closing:
             self._closing = False
             self.closeRequested.emit()
 
-    @QtCore.Slot()
-    def home(self) -> None:
-        '''Move payload to the home position ``(0, y0)``.'''
-        self._state = ScanState.MOVING
-        self.moveTo([[0., self.polargraph.y0]])
-        self._setIdle()
+    def _resetTrajectory(self) -> None:
+        self._paused = False
+        self._abandon = False
+        self._paused_vertices = None
+        self._pre_pause_state = None
+        self._continuation = None
 
-    @QtCore.Slot()
-    def center(self) -> None:
-        '''Move payload to the center of the scan area.'''
-        self._state = ScanState.MOVING
-        y = self.polargraph.y0 + self.dy + self.height / 2.
-        self.moveTo([[self.dx, y]])
-        self._setIdle()
-
-    @QtCore.Slot()
-    def scan(self) -> None:
-        '''Execute a full scan, then return to home.
-
-        State transitions during a normal scan:
-
-        ``IDLE → MOVING`` (positioning to start)
-        ``→ SCANNING`` (collecting data)
-        ``→ MOVING`` (returning home via :meth:`home`)
-        ``→ IDLE``
-
-        After a normal Stop, the scanner returns home before reaching IDLE.
-        After :meth:`interruptAndClose`, the home move is skipped and
-        :attr:`closeRequested` is emitted on reaching IDLE.
-        '''
-        if self._state != ScanState.IDLE:
-            self.interrupt()
-            return
-        vertices = self.vertices()
-        self._state = ScanState.MOVING
-        if self.moveTo([vertices[0, :]]):
-            self._state = ScanState.SCANNING
-            interrupted = not self.moveTo(vertices[1:, :])
-            self._state = ScanState.MOVING
-            if not (interrupted and self._closing):
-                self.home()          # home() calls _setIdle()
-                self.scanFinished.emit()
-                return
-        self._setIdle()
-        self.scanFinished.emit()
-
-    @QtCore.Slot(list)
-    def moveTo(self, vertices) -> bool:
-        '''Move the polargraph through a sequence of waypoints.
+    def _moveTo(self, vertices) -> str:
+        '''Move through a sequence of waypoints.
 
         Parameters
         ----------
@@ -250,48 +223,177 @@ class QScanPattern(QtCore.QObject):
 
         Returns
         -------
-        bool
-            ``True`` if all waypoints were reached; ``False`` if
-            interrupted.
+        str
+            ``'complete'``, ``'paused'``, or ``'abandoned'``.
         '''
         if self.polargraph is None:
-            return False
-        for vertex in vertices:
-            logger.debug(f'Moving to: {vertex}')
+            return 'abandoned'
+        for i, vertex in enumerate(vertices):
             self.polargraph.moveTo(*vertex)
             while True:
                 QCoreApplication.processEvents()
-                if self._interrupt:
+                if self._abandon:
                     self.polargraph.stop()
+                    self.polargraph.release()
+                    self._abandon = False
+                    return 'abandoned'
+                if self._paused:
+                    self.polargraph.stop()
+                    self._paused_vertices = [vertices[j]
+                                             for j in range(i, len(vertices))]
+                    return 'paused'
                 x, y, moving = self.polargraph.position
+                self.dataReady.emit(np.array([x, y]))
                 if not moving:
                     break
-                self.dataReady.emit(np.array([x, y]))
-            logger.debug(f'Reached goal: {vertex}')
-            if self._interrupt:
-                break
-        success = not self._interrupt
-        self._interrupt = False
         self.polargraph.release()
-        self.moveFinished.emit()
-        return success
+        return 'complete'
 
     @QtCore.Slot()
-    def interrupt(self) -> None:
-        '''Request that the current motion be aborted.
+    def home(self) -> None:
+        '''Move payload to the home position.'''
+        if self._state in (ScanState.MOVING, ScanState.SCANNING):
+            return
+        self._resetTrajectory()
+        self._setState(ScanState.MOVING)
+        self._moveTo([[0., self.polargraph.y0]])
+        self._setIdle()
 
-        The scanner will stop at its current position and then return
-        to the home position.  To stop without going home (e.g. when
-        the application window is closing), use :meth:`interruptAndClose`.
+    @QtCore.Slot()
+    def center(self) -> None:
+        '''Move payload to the center of the scan area.'''
+        if self._state in (ScanState.MOVING, ScanState.SCANNING):
+            return
+        self._resetTrajectory()
+        self._setState(ScanState.MOVING)
+        y = self.polargraph.y0 + self.dy + self.height / 2.
+        self._moveTo([[self.dx, y]])
+        self._setIdle()
+
+    @QtCore.Slot()
+    def scan(self) -> None:
+        '''Execute a full scan, then return home.
+
+        State transitions during a normal scan:
+
+        ``IDLE → MOVING`` (positioning to start)
+        ``→ SCANNING`` (collecting data)
+        ``→ MOVING`` (returning home)
+        ``→ IDLE``
+
+        The scan may be paused at any point via :meth:`pause` and
+        resumed via :meth:`resume`.  Calling :meth:`home`,
+        :meth:`center`, or :meth:`abandon` while paused discards the
+        saved trajectory.
         '''
-        self._interrupt = True
+        if self._state != ScanState.IDLE:
+            return
+        vertices = list(self.vertices())
+        self._setState(ScanState.MOVING)
+        result = self._moveTo([vertices[0]])
+        if result == 'complete':
+            self._continueScan(vertices[1:])
+        elif result == 'paused':
+            self._pre_pause_state = ScanState.MOVING
+            self._continuation = lambda: self._continueScan(vertices[1:])
+            self._setState(ScanState.PAUSED)
+        else:
+            self._setIdle()
+
+    def _continueScan(self, remaining: list) -> None:
+        self._setState(ScanState.SCANNING)
+        result = self._moveTo(remaining)
+        if result == 'complete':
+            self._homeAfterScan()
+        elif result == 'paused':
+            self._pre_pause_state = ScanState.SCANNING
+            self._continuation = self._homeAfterScan
+            self._setState(ScanState.PAUSED)
+        else:
+            self._setIdle()
+
+    def _homeAfterScan(self) -> None:
+        self._setState(ScanState.MOVING)
+        result = self._moveTo([[0., self.polargraph.y0]])
+        if result == 'complete':
+            self._setIdle()
+        elif result == 'paused':
+            self._pre_pause_state = ScanState.MOVING
+            self._continuation = self._setIdle
+            self._setState(ScanState.PAUSED)
+        else:
+            self._setIdle()
+
+    @QtCore.Slot()
+    def pause(self) -> None:
+        '''Pause motion at the end of the current move.
+
+        The polargraph stops at its current target vertex and holds
+        position.  Call :meth:`resume` to continue or :meth:`abandon`
+        to discard the remaining trajectory.
+        '''
+        if self._state in (ScanState.MOVING, ScanState.SCANNING):
+            self._paused = True
+
+    @QtCore.Slot()
+    def resume(self) -> None:
+        '''Resume a paused trajectory.
+
+        Re-issues the last target vertex and continues with the
+        remaining waypoints.
+        '''
+        if self._state != ScanState.PAUSED:
+            return
+        saved_vertices = self._paused_vertices or []
+        saved_state = self._pre_pause_state or ScanState.MOVING
+        continuation = self._continuation
+        self._paused = False
+        self._paused_vertices = None
+        self._pre_pause_state = None
+        self._continuation = None
+
+        self._setState(saved_state)
+        result = self._moveTo(saved_vertices)
+
+        if result == 'complete':
+            if continuation:
+                continuation()
+            else:
+                self._setIdle()
+        elif result == 'paused':
+            self._pre_pause_state = saved_state
+            self._continuation = continuation
+            self._setState(ScanState.PAUSED)
+        else:
+            self._setIdle()
+
+    @QtCore.Slot()
+    def abandon(self) -> None:
+        '''Abandon the current trajectory and return to IDLE.
+
+        If the scanner is moving, the motors are stopped immediately.
+        If paused, the saved trajectory is discarded.  The polargraph
+        remains at its current position; call :meth:`home` to return
+        to the home position.
+        '''
+        if self._state == ScanState.PAUSED:
+            self._resetTrajectory()
+            self._setIdle()
+        elif self._state != ScanState.IDLE:
+            self._abandon = True
 
     def interruptAndClose(self) -> None:
-        '''Interrupt motion and signal that the application is closing.
+        '''Abandon motion and emit :attr:`closeRequested` on reaching IDLE.
 
-        Like :meth:`interrupt`, but sets an internal flag so that
-        :meth:`scan` skips the return-home move and instead emits
-        :attr:`closeRequested` when the state returns to IDLE.
+        Used by the application window's ``closeEvent`` to ensure the
+        polargraph stops cleanly before the application exits.
         '''
         self._closing = True
-        self._interrupt = True
+        if self._state == ScanState.PAUSED:
+            self._resetTrajectory()
+            self._setIdle()
+        elif self._state != ScanState.IDLE:
+            self._abandon = True
+        else:
+            self._closing = False
+            self.closeRequested.emit()

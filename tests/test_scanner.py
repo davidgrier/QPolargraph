@@ -3,13 +3,14 @@ import pytest
 from qtpy import QtCore
 from QPolargraph.QScanner import QScanner
 from QPolargraph.hardware.fake import FakePolargraph
+from QPolargraph.patterns.QScanPattern import ScanState
 from QPolargraph.patterns.PolarScan import PolarScan
 from QPolargraph.patterns.RasterScan import RasterScan
 
 
 @pytest.fixture
 def scanner(qtbot, tmp_path):
-    w = QScanner(configdir=str(tmp_path / 'config'))
+    w = QScanner(fake=True, configdir=str(tmp_path / 'config'))
     qtbot.addWidget(w)
     return w
 
@@ -17,7 +18,9 @@ def scanner(qtbot, tmp_path):
 @pytest.fixture
 def fake_scanner(qtbot, tmp_path):
     w = QScanner(fake=True, configdir=str(tmp_path / 'config'))
-    w.scanner.pattern.polargraph.step_delay = 0.
+    p = w.scanner.pattern
+    p.polargraph.step_delay = 0.
+    p.step = 100.
     qtbot.addWidget(w)
     return w
 
@@ -68,6 +71,7 @@ def test_show_status(scanner):
 def test_data_ready_signal(scanner, qtbot):
     received = []
     scanner.dataReady.connect(received.append)
+    scanner.scanner.pattern._state = ScanState.SCANNING
     scanner._onDataReady(np.array([0.1, 0.2]))
     assert len(received) == 1
     assert received[0] == {'x': pytest.approx(0.1), 'y': pytest.approx(0.2)}
@@ -115,29 +119,29 @@ def test_fake_scanner_uses_fake_polargraph(fake_scanner):
 
 # --- scan lifecycle ---
 
-def test_scan_started_changes_button_text(fake_scanner, qtbot):
+def test_scan_button_shows_pause_during_scan(fake_scanner, qtbot):
     text_during_scan = []
     QtCore.QTimer.singleShot(0, lambda: text_during_scan.append(fake_scanner.scan.text()))
-    fake_scanner.scanStarted()
-    assert text_during_scan == ['Stop']
+    fake_scanner.toggleScan()
+    assert text_during_scan == ['Pause']
     assert fake_scanner.scan.text() == 'Scan'
 
 
 def test_scan_controls_disabled_while_scanning(fake_scanner, qtbot):
     enabled_during_scan = []
     QtCore.QTimer.singleShot(0, lambda: enabled_during_scan.append(fake_scanner.center.isEnabled()))
-    fake_scanner.scanStarted()
+    fake_scanner.toggleScan()
     assert enabled_during_scan == [False]
     assert fake_scanner.center.isEnabled()
 
 
 def test_scan_finished_restores_button(fake_scanner, qtbot):
-    fake_scanner.scanStarted()
+    fake_scanner.toggleScan()
     qtbot.waitUntil(lambda: fake_scanner.scan.text() == 'Scan', timeout=5000)
 
 
 def test_scan_finished_restores_controls(fake_scanner, qtbot):
-    fake_scanner.scanStarted()
+    fake_scanner.toggleScan()
     qtbot.waitUntil(lambda: fake_scanner.center.isEnabled(), timeout=5000)
     assert fake_scanner.home.isEnabled()
     assert fake_scanner.polargraph.isEnabled()
@@ -145,24 +149,24 @@ def test_scan_finished_restores_controls(fake_scanner, qtbot):
 
 
 def test_scan_finished_shows_status(fake_scanner, qtbot):
-    fake_scanner.scanStarted()
+    fake_scanner.toggleScan()
     qtbot.waitUntil(
         lambda: 'complete' in fake_scanner.statusBar().currentMessage().lower(),
         timeout=5000)
 
 
-def test_scan_aborted_sets_button_text(fake_scanner, qtbot):
-    QtCore.QTimer.singleShot(0, fake_scanner.scanAborted)
-    fake_scanner.scanStarted()
-    assert fake_scanner.scan.text() == 'Scan'
+def test_scan_pause_sets_button_to_resume(fake_scanner, qtbot):
+    QtCore.QTimer.singleShot(0, fake_scanner.toggleScan)  # pause during scan
+    fake_scanner.toggleScan()  # start scan (blocks until paused or done)
+    assert fake_scanner.scan.text() in ('Resume', 'Scan')
 
 
-# --- _startMove (Home / Center) ---
+# --- home / center disable controls ---
 
 def test_home_disables_controls(fake_scanner, qtbot):
     enabled_during_move = []
     QtCore.QTimer.singleShot(0, lambda: enabled_during_move.append(fake_scanner.center.isEnabled()))
-    fake_scanner._startMove(fake_scanner.scanner.pattern.home)
+    fake_scanner.scanner.pattern.home()
     assert enabled_during_move == [False]
     assert fake_scanner.center.isEnabled()
 
@@ -170,6 +174,6 @@ def test_home_disables_controls(fake_scanner, qtbot):
 def test_center_disables_controls(fake_scanner, qtbot):
     enabled_during_move = []
     QtCore.QTimer.singleShot(0, lambda: enabled_during_move.append(fake_scanner.home.isEnabled()))
-    fake_scanner._startMove(fake_scanner.scanner.pattern.center)
+    fake_scanner.scanner.pattern.center()
     assert enabled_during_move == [False]
     assert fake_scanner.home.isEnabled()

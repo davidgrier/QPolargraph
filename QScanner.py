@@ -1,21 +1,16 @@
-# TODO
-# add a "scan pattern" widget that allows the user to select and configure
-# different scan patterns from the GUI, without needing to subclass QScanner.
-# UI improvements
 from __future__ import annotations
 
-from pathlib import Path
-from qtpy import uic, QtCore, QtGui, QtWidgets
+from qtpy import QtCore, QtGui, QtWidgets
 from QInstrument.lib.Configure import Configure
 from QPolargraph.hardware.QPolargraphWidget import QPolargraphWidget
-from QPolargraph.patterns.QScanPattern import QScanPattern
+from QPolargraph.patterns.QScanPattern import QScanPattern, ScanState
+from QPolargraph.patterns.QScanPatternWidget import QScanPatternWidget
 from QPolargraph.patterns.PolarScan import PolarScan
 from QPolargraph.patterns.RasterScan import RasterScan
 from QPolargraph.patterns.TarzanScan import TarzanScan
 import pyqtgraph as pg
 import numpy as np
 import numpy.typing as npt
-import inspect
 import logging
 
 
@@ -26,7 +21,7 @@ class QScanner(QtWidgets.QMainWindow):
 
     '''Application framework for a polargraph scanner.
 
-    Loads the ``Scanner.ui`` layout, wires up a
+    Builds the UI programmatically, wires up a
     :class:`~QPolargraph.QPolargraphWidget.QPolargraphWidget` and a
     :class:`~QPolargraph.QScanPatternWidget.QScanPatternWidget`, and
     provides a live :mod:`pyqtgraph` display of the scan trajectory and
@@ -35,13 +30,9 @@ class QScanner(QtWidgets.QMainWindow):
 
     Class Attributes
     ----------------
-    UIFILE : str
-        Filename of the Qt Designer ``.ui`` file.  Subclasses may
-        override this to provide a different layout while inheriting
-        all scanner behavior.
     SCAN_PATTERN : type
         :class:`~QPolargraph.QScanPattern.QScanPattern` subclass to
-        instantiate as the scan device.  Default:
+        instantiate as the scan pattern.  Default:
         :class:`~QPolargraph.PolarScan.PolarScan`.  Subclasses override
         this to select a different scan pattern:
 
@@ -50,12 +41,23 @@ class QScanner(QtWidgets.QMainWindow):
             class QMyScanner(QScanner):
                 SCAN_PATTERN = RasterScan
 
+    SCAN_WIDGET : type
+        :class:`~QPolargraph.QScanPatternWidget.QScanPatternWidget`
+        subclass to instantiate as the scan controls widget.  Default:
+        :class:`~QPolargraph.QScanPatternWidget.QScanPatternWidget`.
+        Subclasses override this to provide a custom controls widget:
+
+        .. code-block:: python
+
+            class QMyScanner(QScanner):
+                SCAN_WIDGET = TarzanScanWidget
+
     Properties
     ----------
     configdir : str
         Directory for storing instrument configuration.
         Defaults to ``~/.<ClassName>`` where *ClassName* is the name of
-        the concrete subclass, so each subclass gets its own config directory.
+        the concrete subclass: each subclass gets its own config directory.
 
     Methods
     -------
@@ -73,7 +75,6 @@ class QScanner(QtWidgets.QMainWindow):
         before emitting, e.g.::
 
             def _onDataReady(self, pos: np.ndarray) -> None:
-                self.plotBelt(pos)
                 self.dataReady.emit(
                     {'x': float(pos[0]), 'y': float(pos[1])}
                     | self.instrument.acquire())
@@ -90,100 +91,142 @@ class QScanner(QtWidgets.QMainWindow):
     dataReady = QtCore.Signal(dict)
 
     SCAN_PATTERN = PolarScan
-    UIFILE = 'Scanner.ui'
-    _UIPATH = Path(__file__).parent / UIFILE
+    SCAN_WIDGET = QScanPatternWidget
     _SCAN_LOCKED = ('center', 'home', 'polargraph', 'scanner')
 
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        if 'UIFILE' in cls.__dict__:
-            cls._UIPATH = Path(inspect.getfile(cls)).parent / cls.UIFILE
-
-    def __init__(self, *args, configdir: str | None = None,
+    def __init__(self, *args,
+                 configdir: str | None = None,
                  fake: bool = False,
-                 pattern: type | None = None, **kwargs):
-        self._configurePyqtgraph()
+                 pattern: type | None = None,
+                 **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        QPolargraphWidget._fake = fake
-        uic.loadUi(self._UIPATH, self)
-        QPolargraphWidget._fake = False
-        self._latestPosition: np.ndarray | None = None
-        self._beltTimer = QtCore.QTimer(self)
-        self._beltTimer.setInterval(33)  # ~30 Hz
-        self._beltTimer.timeout.connect(self._updateBelt)
+        self.setupPolargraph(fake)
+        self.setupScanner(pattern)
+        self.configure(configdir)
+        self.setupUi()
+        self.connectSignals()
+        self.updatePlot()
+
+    def setupPolargraph(self, fake: bool) -> None:
+        device = QPolargraphWidget._fakeCls()() if fake else None
+        self.polargraph = QPolargraphWidget(device=device)
+
+    def setupScanner(self, pattern: type | None) -> None:
+        self.scanner = self.SCAN_WIDGET()
         self.scanner.pattern = (pattern or self.SCAN_PATTERN)()
         self.scanner.pattern.polargraph = self.polargraph.device
+
+    def configure(self, configdir: str | None) -> None:
         configdir = configdir or f'~/.{type(self).__name__}'
         self.config = Configure(configdir=configdir)
         self.restoreSettings()
-        self._configurePlot()
-        self._connectSignals()
 
-    @classmethod
-    def _configurePyqtgraph(cls) -> None:
-        pg.setConfigOption('background', 'w')
-        pg.setConfigOption('foreground', 'k')
+    def setupUi(self) -> None:
+        self.setWindowTitle(type(self).__name__)
+        geom = QtWidgets.QApplication.primaryScreen().availableGeometry()
+        self.resize(geom.width() * 2 // 3, geom.height() * 2 // 3)
 
-    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
-        logger.debug(f'Closing: {event.type()}')
-        if self.scanner.pattern.moving():
-            self.scanner.pattern.interruptAndClose()
-            event.ignore()
-            return
-        self.saveSettings()
-        self.polargraph.device.close()
-        super().closeEvent(event)
+        central = QtWidgets.QWidget()
+        self.setCentralWidget(central)
+        main = QtWidgets.QHBoxLayout(central)
 
-    def showStatus(self, message: str) -> None:
-        '''Display a message on the status bar.'''
-        self.statusBar().showMessage(message)
+        # Left: buttons + plot
+        scanWidget = QtWidgets.QWidget()
+        scanLayout = QtWidgets.QVBoxLayout(scanWidget)
+        scanLayout.setSpacing(1)
+        scanLayout.setContentsMargins(2, 1, 2, 1)
 
-    def _connectSignals(self) -> None:
-        self.scan.clicked.connect(self.toggleScan)
-        self.polargraph.propertyChanged.connect(self.updatePlot)
-        self.scanner.patternChanged.connect(self.updatePlot)
-        self.scanner.pattern.dataReady.connect(self._onDataReady)
-        self.scanner.pattern.closeRequested.connect(
-            self.close, QtCore.Qt.ConnectionType.QueuedConnection)
-        self.home.clicked.connect(
-            lambda: self._startMove(self.scanner.pattern.home))
-        self.center.clicked.connect(
-            lambda: self._startMove(self.scanner.pattern.center))
-        self.actionSaveSettings.triggered.connect(self.saveSettings)
-        self.actionRestoreSettings.triggered.connect(self.restoreSettings)
+        buttons = QtWidgets.QWidget()
+        buttonLayout = QtWidgets.QHBoxLayout(buttons)
+        self.home = QtWidgets.QPushButton('Home')
+        self.center = QtWidgets.QPushButton('Center')
+        self.scan = QtWidgets.QPushButton('Scan')
+        buttonLayout.addWidget(self.home)
+        buttonLayout.addWidget(self.center)
+        buttonLayout.addWidget(self.scan)
 
-    def _configurePlot(self) -> None:
+        self.graphicsView = pg.GraphicsView()
+        self.graphicsView.setBackground('w')
+
+        scanLayout.addWidget(buttons, stretch=0)
+        scanLayout.addWidget(self.graphicsView, stretch=1)
+        main.addWidget(scanWidget, stretch=1)
+
+        # Right: instrument controls
+        controls = QtWidgets.QWidget()
+        controlsLayout = QtWidgets.QVBoxLayout(controls)
+        controlsLayout.setSpacing(1)
+        controlsLayout.setContentsMargins(2, 1, 2, 1)
+
+        polargraphBox = QtWidgets.QGroupBox('Polargraph')
+        polargraphLayout = QtWidgets.QVBoxLayout(polargraphBox)
+        polargraphLayout.setSpacing(1)
+        polargraphLayout.setContentsMargins(2, 1, 2, 1)
+        polargraphLayout.addWidget(self.polargraph)
+        controlsLayout.addWidget(polargraphBox, stretch=0)
+
+        scannerBox = QtWidgets.QGroupBox('Scan setup')
+        scannerLayout = QtWidgets.QVBoxLayout(scannerBox)
+        scannerLayout.setSpacing(1)
+        scannerLayout.setContentsMargins(2, 1, 2, 1)
+        scannerLayout.addWidget(self.scanner)
+        controlsLayout.addWidget(scannerBox, stretch=0)
+        controlsLayout.addStretch(1)
+
+        main.addWidget(controls, stretch=0)
+
+        # Plot items
         self.plot = pg.PlotItem()
         self.graphicsView.setCentralItem(self.plot)
         self.plot.invertY(True)
         self.plot.setAspectLocked(ratio=1.)
         self.plot.showGrid(True, True, 0.2)
+        for name in ('left', 'bottom'):
+            axis = self.plot.getAxis(name)
+            axis.setPen('k')
+            axis.setTextPen('k')
 
         pen = pg.mkPen('r', style=QtCore.Qt.PenStyle.DotLine)
         self.trajectoryPlot = pg.PlotDataItem(pen=pen)
         self.plot.addItem(self.trajectoryPlot)
-        self.plotTrajectory()
 
         pen = pg.mkPen('k', width=3)
         brush = pg.mkBrush('y')
         self.beltPlot = pg.PlotDataItem(pen=pen, symbol='o',
                                         symbolPen=pen, symbolBrush=brush)
         self.plot.addItem(self.beltPlot)
-        self.plotBelt()
 
         self.dataPlot = pg.ScatterPlotItem(pen=None)
         self.plot.addItem(self.dataPlot)
 
-    @QtCore.Slot(object)
-    def _onDataReady(self, pos: np.ndarray) -> None:
-        self._latestPosition = pos
-        self.dataReady.emit({'x': float(pos[0]), 'y': float(pos[1])})
+        # Menu bar
+        fileMenu = self.menuBar().addMenu('File')
+        self.actionSaveSettings = fileMenu.addAction('Save Settings')
+        self.actionRestoreSettings = fileMenu.addAction('Restore Settings')
+        fileMenu.addSeparator()
+        self.actionSaveData = fileMenu.addAction('Save Data')
+        self.actionSaveDataAs = fileMenu.addAction('Save Data As ...')
+        self.actionLoadData = fileMenu.addAction('Load Data ...')
+        fileMenu.addSeparator()
+        self.actionQuit = fileMenu.addAction('Quit')
+        self.actionQuit.triggered.connect(self.close)
 
-    @QtCore.Slot()
-    def _updateBelt(self) -> None:
-        if self._latestPosition is not None:
-            self.plotBelt(self._latestPosition)
-            self._latestPosition = None
+        self.statusBar()
+
+    def connectSignals(self) -> None:
+        self.polargraph.propertyChanged.connect(self.updatePlot)
+        self.scanner.patternChanged.connect(self.updatePlot)
+        self.scanner.pattern.dataReady.connect(self.plotBelt)
+        self.scanner.pattern.dataReady.connect(self._onDataReady)
+        self.scanner.pattern.stateChanged.connect(self._onStateChanged)
+        self.scanner.pattern.closeRequested.connect(self._onCloseRequested)
+
+        self.scan.clicked.connect(self.toggleScan)
+        self.center.clicked.connect(self.scanner.pattern.center)
+        self.home.clicked.connect(self.scanner.pattern.home)
+
+        self.actionSaveSettings.triggered.connect(self.saveSettings)
+        self.actionRestoreSettings.triggered.connect(self.restoreSettings)
 
     @QtCore.Slot()
     def updatePlot(self) -> None:
@@ -206,6 +249,38 @@ class QScanner(QtWidgets.QMainWindow):
         x = [-p.ell / 2., xp, p.ell / 2]
         y = [0, yp, 0]
         self.beltPlot.setData(x, y)
+
+    def _onStateChanged(self, state: ScanState) -> None:
+        locked = state in (ScanState.MOVING, ScanState.SCANNING)
+        for name in self._SCAN_LOCKED:
+            getattr(self, name).setEnabled(not locked)
+        if state == ScanState.IDLE:
+            self.scan.setText('Scan')
+            self.scan.setEnabled(True)
+            self.showStatus('Scan complete')
+        elif state == ScanState.PAUSED:
+            self.scan.setText('Resume')
+            self.scan.setEnabled(True)
+            self.showStatus('Scan paused')
+        else:
+            self.scan.setText('Pause')
+            self.scan.setEnabled(state == ScanState.SCANNING)
+
+    @QtCore.Slot()
+    def toggleScan(self) -> None:
+        state = self.scanner.pattern._state
+        if state == ScanState.IDLE:
+            self.showStatus('Scanning...')
+            self.scanner.pattern.scan()
+        elif state == ScanState.PAUSED:
+            self.scanner.pattern.resume()
+        else:
+            self.scanner.pattern.pause()
+
+    @QtCore.Slot(object)
+    def _onDataReady(self, pos: np.ndarray) -> None:
+        if self.scanner.pattern.scanning():
+            self.dataReady.emit({'x': float(pos[0]), 'y': float(pos[1])})
 
     def plotData(self, x: npt.ArrayLike, y: npt.ArrayLike,
                  hue: npt.ArrayLike,
@@ -233,60 +308,6 @@ class QScanner(QtWidgets.QMainWindow):
         self.dataPlot.addPoints(x, y, brush=brush)
 
     @QtCore.Slot()
-    def toggleScan(self) -> None:
-        if not self.scanner.pattern.moving():
-            self.scanStarted()
-        else:
-            self.scanAborted()
-
-    def _startMove(self, fn: callable,
-                   on_finished: callable | None = None) -> None:
-        '''Run fn on the main thread with UI locked and belt timer active.
-
-        The scan loop calls processEvents() each iteration to dispatch
-        deferred callbacks (e.g. QTimer.singleShot) and queued signals
-        between position polls.  With real hardware, QSerialInterface.receive()
-        also processes events internally via QEventLoop, so GUI responsiveness
-        does not depend on processEvents() alone.
-        '''
-        for name in self._SCAN_LOCKED:
-            getattr(self, name).setEnabled(False)
-        self._beltTimer.start()
-        fn()
-        (on_finished or self._moveFinished)()
-
-    @QtCore.Slot()
-    def _moveFinished(self) -> None:
-        self._beltTimer.stop()
-        for name in self._SCAN_LOCKED:
-            getattr(self, name).setEnabled(True)
-        self.plotBelt()
-
-    @QtCore.Slot()
-    def scanStarted(self) -> None:
-        self.showStatus('Scanning...')
-        self.scan.setText('Stop')
-        self._startMove(self.scanner.pattern.scan,
-                        on_finished=self.scanFinished)
-
-    @QtCore.Slot()
-    def scanAborted(self) -> None:
-        self.showStatus('Aborting scan')
-        self.scanner.pattern.interrupt()
-        self.scan.setText('Stopping')
-        self.scan.setEnabled(False)
-
-    @QtCore.Slot()
-    def scanFinished(self) -> None:
-        self._beltTimer.stop()
-        self.scan.setText('Scan')
-        self.scan.setEnabled(True)
-        for name in self._SCAN_LOCKED:
-            getattr(self, name).setEnabled(True)
-        self.plotBelt()
-        self.showStatus('Scan complete')
-
-    @QtCore.Slot()
     def saveSettings(self) -> None:
         self.config.save(self.scanner)
         self.config.save(self.polargraph)
@@ -297,6 +318,23 @@ class QScanner(QtWidgets.QMainWindow):
         self.config.restore(self.scanner)
         self.config.restore(self.polargraph)
         self.showStatus('Configuration restored')
+
+    def showStatus(self, message: str) -> None:
+        '''Display a message on the status bar.'''
+        self.statusBar().showMessage(message)
+
+    def _onCloseRequested(self) -> None:
+        self.close()
+
+    def closeEvent(self, event: QtGui.QCloseEvent) -> None:
+        logger.debug(f'Closing: {event.type()}')
+        if self.scanner.pattern.active():
+            self.scanner.pattern.interruptAndClose()
+            event.ignore()
+            return
+        self.saveSettings()
+        self.polargraph.close()
+        super().closeEvent(event)
 
     @classmethod
     def example(cls) -> None:

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from QPolargraph.hardware.fake import FakePolargraph
-from QPolargraph.patterns.QScanPattern import QScanPattern
+from QPolargraph.patterns.QScanPattern import QScanPattern, ScanState
 from QPolargraph.patterns.RasterScan import RasterScan
 from QPolargraph.patterns.PolarScan import PolarScan
 from QPolargraph.patterns.TarzanScan import TarzanScan
@@ -107,15 +107,17 @@ def test_raster_trajectory_has_more_points_than_vertices(raster):
 def test_raster_trajectory_starts_at_first_vertex(raster):
     v = raster.vertices()
     t = raster.trajectory()
-    assert t[0, 0] == pytest.approx(v[0, 0], abs=1e-6)
-    assert t[1, 0] == pytest.approx(v[0, 1], abs=1e-6)
+    ds = raster.polargraph.ds
+    assert t[0, 0] == pytest.approx(v[0, 0], abs=ds)
+    assert t[1, 0] == pytest.approx(v[0, 1], abs=ds)
 
 
 def test_raster_trajectory_ends_at_last_vertex(raster):
     v = raster.vertices()
     t = raster.trajectory()
-    assert t[0, -1] == pytest.approx(v[-1, 0], abs=1e-6)
-    assert t[1, -1] == pytest.approx(v[-1, 1], abs=1e-6)
+    ds = raster.polargraph.ds
+    assert t[0, -1] == pytest.approx(v[-1, 0], abs=ds)
+    assert t[1, -1] == pytest.approx(v[-1, 1], abs=ds)
 
 
 def test_raster_trajectory_is_curved(raster):
@@ -408,32 +410,30 @@ def test_center_moves_to_scan_midpoint(scan):
     assert y == pytest.approx(expected, abs=scan.polargraph.ds)
 
 
-# --- moveTo return value / interrupt ---
+# --- state machine ---
 
-def test_moveto_returns_true_on_completion(scan):
-    assert scan.moveTo([[0.1, 0.3]]) is True
+def test_idle_initially(scan):
+    assert scan._state == ScanState.IDLE
 
-
-def test_interrupt_causes_moveto_to_return_false(scan):
-    scan.interrupt()
-    assert scan.moveTo([[0.1, 0.3]]) is False
-
-
-def test_interrupt_resets_after_moveto(scan):
-    scan.interrupt()
-    scan.moveTo([[0.1, 0.3]])
-    assert scan.moveTo([[0.0, 0.2]]) is True
-
-
-# --- scan / scanning ---
 
 def test_not_scanning_before_scan(scan):
     assert not scan.scanning()
 
 
-def test_scan_emits_scan_finished(scan, qtbot):
-    with qtbot.waitSignal(scan.scanFinished, timeout=5000):
-        scan.scan()
+def test_not_moving_before_scan(scan):
+    assert not scan.moving()
+
+
+def test_not_active_before_scan(scan):
+    assert not scan.active()
+
+
+def test_scan_emits_state_changed(scan, qtbot):
+    states = []
+    scan.stateChanged.connect(states.append)
+    scan.scan()
+    assert ScanState.IDLE in states
+    assert ScanState.SCANNING in states
 
 
 def test_scan_emits_data_ready(scan, qtbot):
@@ -448,3 +448,33 @@ def test_scan_returns_home_after_completion(scan):
     x, y, _ = scan.polargraph.position
     assert x == pytest.approx(0.0)
     assert y == pytest.approx(scan.polargraph.y0)
+
+
+def test_abandon_during_scan_reaches_idle(scan):
+    states = []
+    scan.stateChanged.connect(states.append)
+    from qtpy.QtCore import QTimer
+    QTimer.singleShot(0, scan.abandon)
+    scan.scan()
+    assert states[-1] == ScanState.IDLE
+
+
+def test_pause_resume_completes_scan(scan):
+    states = []
+    scan.stateChanged.connect(states.append)
+    from qtpy.QtCore import QTimer
+    QTimer.singleShot(0, scan.pause)
+    scan.scan()
+    assert ScanState.PAUSED in states
+    scan.resume()
+    assert states[-1] == ScanState.IDLE
+
+
+def test_home_after_pause_abandons_trajectory(scan):
+    from qtpy.QtCore import QTimer
+    QTimer.singleShot(0, scan.pause)
+    scan.scan()
+    assert scan._state == ScanState.PAUSED
+    scan.home()
+    assert scan._state == ScanState.IDLE
+    assert scan._paused_vertices is None

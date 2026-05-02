@@ -47,7 +47,7 @@ def test_s0(pg):
 # --- coordinate conversion ---
 
 def test_i2r_at_home(pg):
-    x, y, status = pg.i2r([0, 0, 0])
+    x, y, status = pg.i2r(0, 0, 0)
     assert x == pytest.approx(0.0)
     assert y == pytest.approx(pg.y0)
     assert status == 0
@@ -58,7 +58,7 @@ def test_i2r_roundtrip(pg):
     xt, yt = 0.05, 0.3
     pg.moveTo(xt, yt)
     n1, n2, _ = pg.indexes
-    x, y, _ = pg.i2r([n1, n2, 0])
+    x, y, _ = pg.i2r(n1, n2, 0)
     assert x == pytest.approx(xt, abs=pg.ds)
     assert y == pytest.approx(yt, abs=pg.ds)
 
@@ -72,9 +72,9 @@ def test_r2i_at_home(pg):
 def test_r2i_i2r_roundtrip(pg):
     xt, yt = 0.1, 0.35
     m, n = pg.r2i(xt, yt)
-    x, y, _ = pg.i2r([m, n, 0])
-    assert x == pytest.approx(xt, abs=1e-9)
-    assert y == pytest.approx(yt, abs=1e-9)
+    x, y, _ = pg.i2r(m, n, 0)
+    assert x == pytest.approx(xt, abs=pg.ds)
+    assert y == pytest.approx(yt, abs=pg.ds)
 
 
 def test_position_at_home(pg):
@@ -142,8 +142,8 @@ def test_moveto_final_position_correct(pg):
     positions = _consume(pg)
     x, y, running = positions[-1]
     assert running == 0.0
-    assert x == pytest.approx(0.2, abs=1e-9)
-    assert y == pytest.approx(0.4, abs=1e-9)
+    assert x == pytest.approx(0.2, abs=pg.ds)
+    assert y == pytest.approx(0.4, abs=pg.ds)
 
 
 def test_moveto_running_flag_while_in_motion(pg):

@@ -1,5 +1,8 @@
+import time
+from qtpy import QtWidgets
 from QInstrument.lib.QInstrumentWidget import QInstrumentWidget
 from QPolargraph.hardware.Polargraph import Polargraph
+from QPolargraph.FlashFirmware import FlashDialog, find_arduinos
 
 
 class QPolargraphWidget(QInstrumentWidget):
@@ -13,19 +16,16 @@ class QPolargraphWidget(QInstrumentWidget):
     via :class:`~QPolargraph.FlashFirmware.FlashDialog`, then retries
     the connection.  If no Arduino is present or the user declines, the
     widget falls back to :class:`~QPolargraph.hardware.fake.FakePolargraph`.
-    Set ``QPolargraphWidget._fake = True`` before instantiation to skip
-    the hardware search and flash offer entirely.
+    Pass a :class:`~QPolargraph.hardware.fake.FakePolargraph` instance as
+    ``device`` to skip the hardware search and flash offer entirely.
     '''
 
     UIFILE = 'PolargraphWidget.ui'
     INSTRUMENT = Polargraph
-    _fake: bool = False
 
     def __init__(self, *args, **kwargs) -> None:
-        if type(self)._fake:
-            kwargs.setdefault('device', self._fakeCls()())
         super().__init__(*args, **kwargs)
-        if not self.device.isOpen() and not type(self)._fake:
+        if not self.device.isOpen():
             self._tryFlash()
         if not self.device.isOpen():
             self.device = self._fakeCls()()
@@ -39,10 +39,7 @@ class QPolargraphWidget(QInstrumentWidget):
         :class:`~QPolargraph.Polargraph.Polargraph` connection after a
         2-second boot delay; on success ``self.device`` is replaced with
         the live instrument.
-        '''
-        import time
-        from qtpy import QtWidgets
-        from QPolargraph.FlashFirmware import FlashDialog, find_arduinos
+        ''' 
         if not find_arduinos():
             return
         message = ('acam3 firmware not detected on the connected Arduino. '

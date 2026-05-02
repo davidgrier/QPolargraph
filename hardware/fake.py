@@ -162,7 +162,7 @@ class FakePolargraph(FakeMotors, Polargraph):
             x, y = self._cartesian_trajectory.popleft()
             running = float(bool(self._cartesian_trajectory))
             return np.array([x, y, running])
-        return self.i2r(self._store.get('indexes', [0, 0, 0]))
+        return self.i2r(*self._store.get('indexes', [0, 0, 0]))
 
     def stop(self) -> None:
         '''Halt motion by discarding the remaining trajectory.'''
