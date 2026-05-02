@@ -36,13 +36,10 @@ Docstring updated to explain the cache-only behaviour and firmware default.
 
 ## Code duplication
 
-**5. `RasterScan.trajectory` duplicates `Polargraph.i2r` inline**
-`RasterScan.py:50-55` — The nested `i2r_vec` function is a NumPy-
-vectorised copy of `Polargraph.i2r`.  It exists only because `i2r` uses
-a scalar `if ysq >= 0` guard that breaks on arrays.
-Resolution: replace the scalar guard in `Polargraph.i2r` with
-`np.maximum(ysq, 0.)` so it vectorises naturally; delete `i2r_vec`
-and call `pg.i2r` directly.
+**5. `RasterScan.trajectory` duplicates `Polargraph.i2r` inline** ✓ fixed
+`i2r` now uses `np.maximum(ysq, 0.)` and `np.any(ysq < 0)` for the
+error guard, making it work with scalar or array inputs.  `i2r_vec`
+deleted; `RasterScan.trajectory` calls `pg.i2r` directly.
 
 ---
 

@@ -217,26 +217,34 @@ class Polargraph(Motors):
     def i2r(self, m: int | float, n: int | float, *args) -> np.ndarray:
         '''Convert motor step indexes to Cartesian coordinates [m].
 
+        Works with scalar or array inputs for ``m`` and ``n``.
+        When called with arrays, ``*args`` must be empty or also
+        array-valued with a matching shape.
+
         Parameters
         ----------
-        m: int or float
-            Step index for motor 1.
-        n: int or float
-            Step index for motor 2.
+        m : int, float, or numpy.ndarray
+            Step index (or array of indexes) for motor 1.
+        n : int, float, or numpy.ndarray
+            Step index (or array of indexes) for motor 2.
+        *args
+            Extra values appended to the result array (e.g. running
+            flag).  ``len(result) == 2 + len(args)``.
 
         Returns
         -------
         numpy.ndarray
-            ``(x, y, status)`` Cartesian position [m] and running flag.
+            ``[x, y, *args]`` Cartesian position [m] plus any extra
+            payload supplied via ``*args``.
         '''
         sm = self.s0 + m * self.ds
         sn = self.s0 - n * self.ds
         x = (sm + sn) * (sm - sn) / (2. * self.ell)
         ysq = (sn*sn + sm*sm)/2. - (self.ell/2.)**2 - x*x
-        if ysq < 0:
+        if np.any(ysq < 0):
             logger.error('unphysical result: '
                          f'{m} {n} {self.s0} {sm} {sn} {ysq}')
-        y = np.sqrt(ysq) if ysq >= 0 else self.y0
+        y = np.sqrt(np.maximum(ysq, 0.))
         return np.array([x, y, *args])
 
     @property
