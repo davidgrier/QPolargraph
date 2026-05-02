@@ -58,7 +58,7 @@ class Polargraph(Motors):
     steps : int
         Motor steps per revolution. Default: 200.
     speed : float
-        Maximum translation speed [mm/s].
+        Maximum translation speed [steps/s].
     ds : float
         Distance travelled per motor step [m]. Read-only.
     s0 : float
@@ -155,7 +155,7 @@ class Polargraph(Motors):
 
     @property
     def speed(self) -> float:
-        '''Maximum translation speed [mm/s].'''
+        '''Maximum translation speed [steps/s].'''
         return self._speed
 
     @speed.setter

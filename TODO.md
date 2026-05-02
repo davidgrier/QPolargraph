@@ -26,11 +26,8 @@ and that callers control the payload via `*args`.
 
 ## Documentation / units
 
-**3. `speed` property documented as mm/s, used as steps/s**
-`Polargraph.py:61` — The docstring says `[mm/s]` but `speed` is passed
-directly to `motor_speed`, which the firmware interprets as steps/s.
-The unit label on the widget spinbox is therefore wrong.
-Resolution: update the docstring (and widget suffix) to `[steps/s]`.
+**3. `speed` property documented as mm/s, used as steps/s** ✓ fixed
+`Polargraph.py` docstrings updated to `[steps/s]`; widget suffix was already correct.
 
 **4. `Motors.acceleration` getter never queries the firmware**
 `Motors.py:238` — The getter returns the cached `self._acceleration`
