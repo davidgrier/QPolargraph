@@ -29,13 +29,8 @@ and that callers control the payload via `*args`.
 **3. `speed` property documented as mm/s, used as steps/s** ✓ fixed
 `Polargraph.py` docstrings updated to `[steps/s]`; widget suffix was already correct.
 
-**4. `Motors.acceleration` getter never queries the firmware**
-`Motors.py:238` — The getter returns the cached `self._acceleration`
-value, not the firmware's current acceleration.  If the firmware's
-acceleration has been changed outside Python (e.g. a prior session
-that did not restore settings), the Python cache diverges silently.
-Resolution: document this limitation in the docstring, or add a
-firmware read command (the Arduino protocol currently only *sets* `A`).
+**4. `Motors.acceleration` getter never queries the firmware** ✓ fixed
+Docstring updated to explain the cache-only behaviour and firmware default.
 
 ---
 

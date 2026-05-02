@@ -238,7 +238,14 @@ class Motors(QSerialInstrument):
 
     @property
     def acceleration(self) -> np.ndarray:
-        '''Motor acceleration ``(a1, a2)`` [steps/s²].'''
+        '''Motor acceleration ``(a1, a2)`` [steps/s²].
+
+        Returns the cached Python value last written via the setter.
+        The acam3 firmware has no read-back command for acceleration,
+        so this will not reflect any value set before the current
+        session.  The firmware default is 1000 steps/s²; the Python
+        default matches.
+        '''
         return self._acceleration
 
     @acceleration.setter
