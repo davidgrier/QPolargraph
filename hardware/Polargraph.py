@@ -309,14 +309,11 @@ def main():
         QtCore.QThread.msleep(100)
     print(f'Arrived:          {polargraph.indexes}')
     print('Moving back to home...')
-    polargraph.moveTo(0., 0.)
+    polargraph.home()
     while polargraph.running():
         print(f'Current position: {polargraph.indexes}', end='\r')
         QtCore.QThread.msleep(100)
     print(f'Final position:      {polargraph.indexes}')
-    # TODO: In tests with real hardware, the polargraph returns
-    # consistently to position [-40, 40, 0] instead of [0, 0, 0].
-    # This is a software bug, not a hardware issue.
     polargraph.close()
     app.quit()
 
