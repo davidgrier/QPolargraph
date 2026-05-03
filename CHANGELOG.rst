@@ -1,6 +1,47 @@
 Changelog
 =========
 
+1.5.0 (2026-05-02)
+------------------
+
+**Breaking changes**
+
+- ``QScanPattern.__init__``: ``polargraph`` is now a required keyword
+  argument (no ``None`` default).  Any code that constructs a scan pattern
+  without supplying ``polargraph=`` will raise ``TypeError``.
+  ``QScanner.setupScanner`` and ``QScanPatternWidget`` have been updated
+  accordingly; ``QScanPatternWidget`` no longer creates a default
+  ``PolarScan()`` without hardware.
+- ``QScanner._SCAN_LOCKED``: removed.  Replaced by the instance method
+  ``_lockedWidgets() -> list``, which returns the widget objects directly.
+  Subclasses that extended ``_SCAN_LOCKED`` must now override
+  ``_lockedWidgets()`` instead (e.g.
+  ``return super()._lockedWidgets() + [self.my_widget]``).
+
+**Other changes**
+
+- ``QScanPattern._moveTo``: return type changed from ``str`` to the new
+  private ``_MoveResult`` enum (``COMPLETE``, ``PAUSED``, ``ABANDONED``).
+  All six comparison sites updated; bare string literals eliminated.
+- ``Polargraph.r2f``, ``r2i``: corrected return-type annotations from
+  the runtime calls ``tuple(float, float)`` / ``tuple(int, int)`` to the
+  correct subscript forms ``tuple[float, float]`` / ``tuple[int, int]``.
+- ``Polargraph.i2r``: now accepts scalar or array inputs for ``m`` and
+  ``n``; the ``ysq < 0`` guard uses ``np.any`` and ``np.maximum`` so the
+  method works correctly for both cases.  ``RasterScan.trajectory`` calls
+  it directly with arrays and the duplicate ``i2r_vec`` helper is removed.
+- ``Motors.running``: consolidated to delegate to ``bool(self.indexes[2])``
+  (the ``P`` command), eliminating the separate ``R`` command.
+- ``Motors.process``: added NumPy-style docstring documenting its role as
+  a hook for unsolicited serial data and the subclass override contract.
+- ``FakeMotors.__init__``: added inline comment explaining why
+  ``_acceleration`` is reset to zero (fake hardware does not simulate
+  trapezoidal ramp dynamics).
+- Tests: added coverage for ``_onMeasure`` subclass override,
+  ``interruptAndClose`` / ``closeRequested`` (all three states), and
+  ``_syncPatternThread`` (no-op for fake, retry when device on main thread,
+  move when device on worker thread).
+
 1.4.0 (2026-05-02)
 ------------------
 
