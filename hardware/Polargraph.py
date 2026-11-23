@@ -54,7 +54,7 @@ class Polargraph(Motors):
     pitch : float
         Tooth pitch of the GT2 timing belt [mm]. Default: 2.
     circumference : int
-        Number of belt teeth per full revolution of the gear. Default: 25.
+        Number of belt teeth per full revolution of the gear. Default: 20.
     steps : int
         Motor steps per revolution. Default: 200.
     speed : float
@@ -85,7 +85,7 @@ class Polargraph(Motors):
 
     def __init__(self,
                  pitch: float = 2.,
-                 circumference: int = 25,
+                 circumference: int = 20,
                  steps: int = 200,
                  ell: float = 1.,
                  y0: float = 0.1,

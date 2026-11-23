@@ -1,6 +1,19 @@
 Changelog
 =========
 
+Unreleased
+----------
+
+- ``QScanner.controlsLayout``: the layout of the instrument-controls column is
+  now a public attribute, so that subclasses can add instrument widgets to it.
+- ``Polargraph`` and ``FakePolargraph``: the default ``circumference`` is now
+  20, the number of teeth of the standard GT2 drive gear (pitch diameter
+  12.7 mm, 0.2 mm of belt per step at 200 steps per revolution).  It was 25,
+  which gave 0.25 mm per step.  Set ``circumference`` to the tooth count of
+  the gear in use; the distance per step ``ds`` and the coordinates computed
+  from step counts follow from it.  Saved configurations in ``~/.QScanner``
+  and ``~/.QInstrument`` override the default.
+
 1.5.0 (2026-05-02)
 ------------------
 

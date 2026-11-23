@@ -24,7 +24,7 @@ build.
 |-----------|-------------|
 | 2× Nema-17 stepper motor | Mounted above and to either side of the scan area |
 | GT2 timing belt | Spans both motors; payload hangs from its midpoint |
-| GT2 drive gear (25-tooth) | One per motor; engages the belt |
+| GT2 drive gear (20-tooth) | One per motor; engages the belt |
 | [Adafruit Motor Shield v2](https://www.adafruit.com/product/1438) | Drives both steppers from a single Arduino |
 | Arduino (Uno or compatible) | Runs the `acam3` firmware; connects to the host via USB |
 
@@ -80,7 +80,7 @@ Five geometric parameters describe the polargraph. Set them in the
 | `ell` | 1.0 m | Horizontal distance between the two motor pulley centres |
 | `y0` | 0.1 m | Vertical distance from the pulleys to the home position |
 | `pitch` | 2.0 mm | GT2 belt tooth pitch |
-| `circumference` | 25 | Number of belt teeth on the drive gear |
+| `circumference` | 20 | Number of belt teeth on the drive gear |
 | `steps` | 200 | Motor steps per revolution |
 
 Measure `ell` and `y0` with a ruler after mounting the motors.

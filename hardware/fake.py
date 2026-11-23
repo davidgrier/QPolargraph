@@ -89,7 +89,7 @@ class FakePolargraph(FakeMotors, Polargraph):
 
     def __init__(self,
                  pitch: float = 2.,
-                 circumference: int = 25,
+                 circumference: int = 20,
                  steps: int = 200,
                  ell: float = 1.,
                  y0: float = 0.1,

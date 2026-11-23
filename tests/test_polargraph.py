@@ -23,7 +23,7 @@ def test_default_pitch(pg):
 
 
 def test_default_circumference(pg):
-    assert pg.circumference == 25
+    assert pg.circumference == 20
 
 
 def test_default_steps(pg):
@@ -37,7 +37,7 @@ def test_default_speed(pg):
 # --- derived geometry ---
 
 def test_ds(pg):
-    assert pg.ds == pytest.approx(1e-3 * 2.0 * 25 / 200)
+    assert pg.ds == pytest.approx(1e-3 * 2.0 * 20 / 200)
 
 
 def test_s0(pg):
@@ -96,7 +96,7 @@ def test_property_set_get_roundtrip(pg):
 
 
 def test_property_type_coercion_int(pg):
-    pg.set('circumference', 20)
+    pg.set('circumference', 25)
     assert isinstance(pg.get('circumference'), int)
 
 

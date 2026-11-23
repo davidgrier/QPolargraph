@@ -14,7 +14,7 @@ Components
      - Mounted above and to either side of the scan area
    * - GT2 timing belt
      - Spans both motors; payload hangs from its midpoint
-   * - GT2 drive gear (25-tooth)
+   * - GT2 drive gear (20-tooth)
      - One per motor; engages the belt
    * - `Adafruit Motor Shield v2 <https://www.adafruit.com/product/1438>`_
      - Drives both steppers from a single Arduino
@@ -84,7 +84,7 @@ panel or pass them directly to
      - 2.0 mm
      - GT2 belt tooth pitch
    * - ``circumference``
-     - 25
+     - 20
      - Number of belt teeth on the drive gear
    * - ``steps``
      - 200
