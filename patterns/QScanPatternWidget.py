@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import ClassVar
 from qtpy import QtCore, QtWidgets
 from QPolargraph.patterns.QScanPattern import QScanPattern
 
@@ -66,7 +67,7 @@ class QScanPatternWidget(QtWidgets.QWidget):
 
     patternChanged = QtCore.Signal()
 
-    _FIELD_SPECS: list[FieldSpec] = [
+    _FIELD_SPECS: ClassVar[list[FieldSpec]] = [
         FieldSpec('width',  'width',   ' m',  0.1, 10.0, 0.01, 0.6),
         FieldSpec('height', 'height',  ' m',  0.1, 10.0, 0.01, 0.6),
         FieldSpec('dx',     'Δx',      ' m', -1.0,  1.0, 0.01, 0.0),
@@ -163,7 +164,8 @@ class QScanPatternWidget(QtWidgets.QWidget):
         import sys
         from QPolargraph.hardware.fake import FakePolargraph
         from QPolargraph.patterns.PolarScan import PolarScan
-        app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
+        app = (QtWidgets.QApplication.instance() or
+               QtWidgets.QApplication(sys.argv))
         widget = cls(pattern=PolarScan(polargraph=FakePolargraph()))
         widget.show()
         sys.exit(app.exec())

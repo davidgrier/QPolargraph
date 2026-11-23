@@ -144,7 +144,7 @@ def test_scan_finished_restores_button(fake_scanner, qtbot):
 
 def test_scan_finished_restores_controls(fake_scanner, qtbot):
     fake_scanner.toggleScan()
-    qtbot.waitUntil(lambda: fake_scanner.center.isEnabled(), timeout=5000)
+    qtbot.waitUntil(fake_scanner.center.isEnabled, timeout=5000)
     assert fake_scanner.home.isEnabled()
     assert fake_scanner.polargraph.isEnabled()
     assert fake_scanner.scanner.isEnabled()

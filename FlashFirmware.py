@@ -16,7 +16,8 @@ in a background thread:
    ``arduino-cli lib list``.  Any missing libraries are installed
    automatically via ``arduino-cli lib install``.
 2. **Compile** — ``arduino-cli compile --fqbn <fqbn> hardware/arduino/acam3/``
-3. **Upload** — ``arduino-cli upload --fqbn <fqbn> --port <port> hardware/arduino/acam3/``
+3. **Upload** — ``arduino-cli upload --fqbn <fqbn> --port <port>
+   hardware/arduino/acam3/``
 
 Each step streams its output to the dialog's text area in real time.
 The flash button is re-enabled on completion, and a ``QMessageBox``
@@ -88,7 +89,7 @@ def detect_fqbn(port_name: str) -> str:
     try:
         result = subprocess.run(
             ['arduino-cli', 'board', 'list', '--format', 'json'],
-            capture_output=True, text=True, timeout=10
+            capture_output=True, text=True, timeout=10, check=False
         )
         data = json.loads(result.stdout)
         # arduino-cli v1 wraps output in {'detected_ports': [...]}
@@ -126,7 +127,8 @@ class _FlashWorker(QtCore.QThread):
         '''Run a subprocess; emit its output; return True on success.'''
         try:
             result = subprocess.run(
-                args, capture_output=True, text=True, timeout=timeout
+                args, capture_output=True, text=True, timeout=timeout,
+                check=False
             )
         except FileNotFoundError:
             self.output.emit(
@@ -147,7 +149,7 @@ class _FlashWorker(QtCore.QThread):
         try:
             result = subprocess.run(
                 ['arduino-cli', 'lib', 'list', '--format', 'json'],
-                capture_output=True, text=True, timeout=30
+                capture_output=True, text=True, timeout=30, check=False
             )
             data = json.loads(result.stdout)
             libs = (data.get('installed_libraries', [])
@@ -298,7 +300,8 @@ class FlashDialog(QtWidgets.QDialog):
 
 def main() -> None:
     '''Entry point for the ``qpolargraph-flash`` GUI script.'''
-    app = QtWidgets.QApplication.instance() or QtWidgets.QApplication(sys.argv)
+    _app = (QtWidgets.QApplication.instance() or
+            QtWidgets.QApplication(sys.argv))
     dialog = FlashDialog()
     dialog.exec()
 

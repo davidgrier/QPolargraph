@@ -3,7 +3,7 @@ from __future__ import annotations
 from qtpy import QtCore, QtGui, QtWidgets
 from QInstrument.lib.Configure import Configure
 from QPolargraph.hardware.QPolargraphWidget import QPolargraphWidget
-from QPolargraph.patterns.QScanPattern import QScanPattern, ScanState
+from QPolargraph.patterns.QScanPattern import ScanState
 from QPolargraph.patterns.QScanPatternWidget import QScanPatternWidget
 from QPolargraph.patterns.PolarScan import PolarScan
 from QPolargraph.patterns.RasterScan import RasterScan
@@ -352,7 +352,8 @@ class QScanner(QtWidgets.QMainWindow):
         y = np.atleast_1d(y)
         hue = np.atleast_1d(hue)
         saturation = np.broadcast_to(np.atleast_1d(saturation), hue.shape)
-        brush = [pg.hsvColor(h, sat=s) for h, s in zip(hue, saturation)]
+        brush = [pg.hsvColor(h, sat=s)
+                 for h, s in zip(hue, saturation, strict=True)]
         self.dataPlot.addPoints(x, y, brush=brush)
 
     @QtCore.Slot()

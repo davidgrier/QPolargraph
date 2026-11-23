@@ -27,7 +27,7 @@ class PolarScan(QScanPattern):
         return np.arange(rmin, rmax, self.step * 1e-3)
 
     def _intercepts(self, r: float) -> list:
-        '''Return the two points where arc of radius *r* crosses the scan rectangle.
+        '''Return the two points where an arc of radius *r* crosses the scan.
 
         Parameters
         ----------
@@ -84,7 +84,7 @@ class PolarScan(QScanPattern):
         y = np.array([])
         points = self.vertices().reshape(-1, 4)
         for n, r in enumerate(self._radii()):
-            x1, y1, x2, y2 = points[n]
+            x1, _y1, x2, _y2 = points[n]
             s1 = np.sqrt(r ** 2 - 2. * L * x1)
             s2 = np.sqrt(r ** 2 - 2. * L * x2)
             s = np.linspace(s1, s2)

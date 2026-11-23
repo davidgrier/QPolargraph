@@ -142,7 +142,8 @@ class FakePolargraph(FakeMotors, Polargraph):
         m1, n1 = self.r2i(x, y)
         ms = np.linspace(m0, m1, nsteps + 1)[1:]
         ns = np.linspace(n0, n1, nsteps + 1)[1:]
-        trajectory = [self.i2r(m, n, 0)[:2].tolist() for m, n in zip(ms, ns)]
+        trajectory = [self.i2r(m, n, 0)[:2].tolist()
+                      for m, n in zip(ms, ns, strict=True)]
         self._cartesian_trajectory = deque(trajectory)
         super().moveTo(x, y)
 

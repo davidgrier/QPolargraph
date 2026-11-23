@@ -43,8 +43,8 @@ See :mod:`QPolargraph.FlashFirmware` for integration into a
 ``QMainWindow`` application via a menu action.
 '''
 
+from typing import ClassVar
 from QInstrument.lib.QSerialInstrument import QSerialInstrument
-from qtpy import QtCore
 import numpy as np
 from parse import parse
 from pathlib import Path
@@ -101,12 +101,13 @@ class Motors(QSerialInstrument):
 
     FIRMWARE_VERSION = _firmware_version()
 
-    comm = dict(baudRate=QSerialInstrument.BaudRate.Baud115200,
-                dataBits=QSerialInstrument.DataBits.Data8,
-                stopBits=QSerialInstrument.StopBits.OneStop,
-                parity=QSerialInstrument.Parity.NoParity,
-                flowControl=QSerialInstrument.FlowControl.NoFlowControl,
-                eol='\n')
+    comm: ClassVar[dict] = dict(
+        baudRate=QSerialInstrument.BaudRate.Baud115200,
+        dataBits=QSerialInstrument.DataBits.Data8,
+        stopBits=QSerialInstrument.StopBits.OneStop,
+        parity=QSerialInstrument.Parity.NoParity,
+        flowControl=QSerialInstrument.FlowControl.NoFlowControl,
+        eol='\n')
 
     def __init__(self, portName: str | None = None, **kwargs):
         super().__init__(portName, **(self.comm | kwargs))
@@ -271,7 +272,7 @@ class Motors(QSerialInstrument):
 
 
 def main():
-    '''Dev-only smoke test: find motors (or fall back to fake) and make a move.'''
+    '''Dev-only smoke test: find motors (or use fake) and make a move.'''
     from qtpy.QtCore import QCoreApplication
     import sys
 

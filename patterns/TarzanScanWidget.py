@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from QPolargraph.patterns.QScanPatternWidget import FieldSpec, QScanPatternWidget
+from QPolargraph.patterns.QScanPatternWidget import (
+    FieldSpec, QScanPatternWidget)
 from QPolargraph.patterns.TarzanScan import TarzanScan
 
 
@@ -16,7 +17,8 @@ class TarzanScanWidget(QScanPatternWidget):
 
     _FIELD_SPECS = QScanPatternWidget._FIELD_SPECS + [
         FieldSpec('x0', 'x₀', ' m', -1.0, 1.0, 0.001, 0.0, decimals=3,
-                  tooltip='Starting x-position on the top edge of the scan area'),
+                  tooltip='Starting x-position on the top edge '
+                          'of the scan area'),
     ]
 
     def __init__(self, *args, pattern=None, **kwargs):

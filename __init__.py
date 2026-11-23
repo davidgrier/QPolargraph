@@ -29,7 +29,7 @@ def __getattr__(name):
         value = getattr(mod, name)
         globals()[name] = value
         return value
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    raise AttributeError(f'module {__name__!r} has no attribute {name!r}')
 
 
 __all__ = list(_lazy)

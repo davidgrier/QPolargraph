@@ -8,6 +8,8 @@ QPolargraph is a Qt-based instrument interface for a two-dimensional polargraph 
 
 QPolargraph is a companion project to QInstrument and should adopt the same coding standards, project structure, Qt binding conventions, and style practices as QInstrument.
 
+Code standards are the portfolio's, in `~/python/STANDARDS.md`: `ruff check .` (configured in `pyproject.toml`) runs in CI as the `Lint` job and as a pre-commit hook. Keep lines within 79 columns and use single quotes.
+
 ## Development Commands
 
 The virtual environment should live in `.qp/` (mirroring QInstrument's `.qi/` convention):

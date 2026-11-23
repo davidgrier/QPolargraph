@@ -4,6 +4,9 @@ Changelog
 Unreleased
 ----------
 
+- Code style is enforced with ``ruff`` (CI ``Lint`` job and a pre-commit hook),
+  with the rules used by the other projects of the group.  No change in
+  behavior.
 - ``QScanner.controlsLayout``: the layout of the instrument-controls column is
   now a public attribute, so that subclasses can add instrument widgets to it.
 - ``Polargraph`` and ``FakePolargraph``: the default ``circumference`` is now

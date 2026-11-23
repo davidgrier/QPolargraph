@@ -82,7 +82,7 @@ class TarzanScan(QScanPattern):
         period-1 regardless of ``x0``; adjust ``dy`` or ``height``
         until ``B ≠ 0``.
         '''
-        x_left, y_top, x_right, y_bottom = self.rect
+        _x_left, y_top, x_right, y_bottom = self.rect
         h = self.polargraph.ell / 2.
         return 4. * h * x_right + y_top**2 - y_bottom**2
 
