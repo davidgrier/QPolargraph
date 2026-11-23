@@ -115,3 +115,18 @@ docstring-quotes = "single"
 "tests/*" = ["E402", "E501", "F401", "F811", "F841", "B018", "B905",
              "RUF012", "RUF059", "SIM", "PERF", "PIE", "PLW2901",
              "UP037", "PLW0108", "PLW1510", "E731", "RUF015", "A002"]
+
+[tool.pyright]
+# Type checking of the program, not the tests, as in QHOT and QVideo.  Run
+# it in an environment with PyQt6 and no other Qt binding.  qtpy does not
+# declare Slot and Signal as exports of its modules
+# (reportPrivateImportUsage), and the Qt stubs type the arguments of event
+# handlers as Optional (reportIncompatibleMethodOverride): neither says
+# anything about our code.
+include = ["hardware", "patterns", "QScanner.py", "FlashFirmware.py", "__main__.py", "__init__.py"]
+pythonVersion = "3.11"
+extraPaths = [".."]
+reportPrivateImportUsage = "none"
+reportIncompatibleMethodOverride = "none"
+# pyright cannot read ``__all__ = "a b".split()``, which is the style.
+reportUnsupportedDunderAll = "none"

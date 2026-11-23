@@ -278,7 +278,8 @@ def main():
 
     print('Motor subsystem test')
     app = QCoreApplication(sys.argv)
-    motors = Motors().find()
+    motors = Motors()
+    motors.find()
     if not motors.isOpen():
         print('No Motors found. Using FakeMotors.')
         from QPolargraph.hardware.fake import FakeMotors

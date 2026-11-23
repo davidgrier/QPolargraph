@@ -1,6 +1,7 @@
 import time
 from qtpy import QtWidgets
 from QInstrument.lib.QInstrumentWidget import QInstrumentWidget
+from QPolargraph.hardware.fake import FakePolargraph
 from QPolargraph.hardware.Polargraph import Polargraph
 from QPolargraph.FlashFirmware import FlashDialog, find_arduinos
 
@@ -28,7 +29,7 @@ class QPolargraphWidget(QInstrumentWidget):
         if not self.device.isOpen():
             self._tryFlash()
         if not self.device.isOpen():
-            self.device = self._fakeCls()()
+            self.device = FakePolargraph()
 
     def _tryFlash(self) -> None:
         '''Offer to flash acam3 firmware if an Arduino is detected.

@@ -10,6 +10,8 @@ QPolargraph is a companion project to QInstrument and should adopt the same codi
 
 Code standards are the portfolio's, in `~/python/STANDARDS.md`: `ruff check .` (configured in `pyproject.toml`) runs in CI as the `Lint` job and as a pre-commit hook. Keep lines within 79 columns and use single quotes.
 
+Types are checked by `pyright` (CI `Types` job, pinned versions in `.github/workflows/tests.yml`, configured under `[tool.pyright]`); run it from an environment with PyQt6 6.12.0 and `pyright==1.1.414`. Widgets loaded from `.ui` files are checked through QInstrument's generated typing modules where they derive from `QInstrumentWidget`.
+
 ## Development Commands
 
 The virtual environment should live in `.qp/` (mirroring QInstrument's `.qi/` convention):

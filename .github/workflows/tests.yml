@@ -21,6 +21,22 @@ jobs:
       - run: pip install ruff
       - run: ruff check .
 
+  types:
+    name: Types (pyright)
+    runs-on: ubuntu-latest
+    # Pyright is pinned: a newer version finds new things, for us to fix
+    # when we choose to move.  PyQt6 6.12.1 types every QtCore.Signal(...)
+    # as missing an argument: stay on 6.12.0 until the stubs are right.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pyright==1.1.414 PyQt6==6.12.0 PyQt6-Qt6==6.12.0 qtpy numpy pandas pyqtgraph parse
+      - run: pip install git+https://github.com/davidgrier/QInstrument.git
+      - run: pip install -e . --no-deps
+      - run: pyright
+
   test:
     runs-on: ubuntu-22.04
     strategy:

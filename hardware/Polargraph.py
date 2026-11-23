@@ -1,6 +1,7 @@
 from qtpy import QtCore
 from QPolargraph.hardware.Motors import Motors
 import numpy as np
+import numpy.typing as npt
 import logging
 
 
@@ -197,7 +198,7 @@ class Polargraph(Motors):
         n = (self.s0 - sn) / self.ds
         return m, n
 
-    def r2i(self, x: float, y: float) -> tuple[int, int]:
+    def r2i(self, x: float, y: float) -> np.ndarray:
         '''Convert Cartesian coordinates to integer motor step indexes.
 
         Parameters
@@ -214,7 +215,7 @@ class Polargraph(Motors):
         '''
         return np.rint(self.r2f(x, y)).astype(int)
 
-    def i2r(self, m: int | float, n: int | float, *args) -> np.ndarray:
+    def i2r(self, m: npt.ArrayLike, n: npt.ArrayLike, *args) -> np.ndarray:
         '''Convert motor step indexes to Cartesian coordinates [m].
 
         Works with scalar or array inputs for ``m`` and ``n``.
@@ -237,6 +238,7 @@ class Polargraph(Motors):
             ``[x, y, *args]`` Cartesian position [m] plus any extra
             payload supplied via ``*args``.
         '''
+        m, n = np.asarray(m, dtype=float), np.asarray(n, dtype=float)
         sm = self.s0 + m * self.ds
         sn = self.s0 - n * self.ds
         x = (sm + sn) * (sm - sn) / (2. * self.ell)
@@ -296,7 +298,8 @@ def main():
 
     print('Polargraph test')
     app = QCoreApplication(sys.argv)
-    polargraph = Polargraph().find()
+    polargraph = Polargraph()
+    polargraph.find()
     if not polargraph.isOpen():
         print('No Polargraph found. Using FakePolargraph.')
         from QPolargraph.hardware.fake import FakePolargraph

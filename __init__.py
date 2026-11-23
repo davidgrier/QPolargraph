@@ -1,5 +1,21 @@
 import importlib
 from importlib.metadata import version, PackageNotFoundError
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # Type checkers cannot follow the lazy __getattr__ below.
+    from .FlashFirmware import FlashDialog
+    from .hardware.fake import FakeMotors, FakePolargraph
+    from .hardware.Motors import Motors
+    from .hardware.Polargraph import Polargraph
+    from .hardware.QPolargraphWidget import QPolargraphWidget
+    from .patterns.PolarScan import PolarScan
+    from .patterns.QScanPattern import QScanPattern
+    from .patterns.QScanPatternWidget import QScanPatternWidget
+    from .patterns.RasterScan import RasterScan
+    from .patterns.TarzanScan import TarzanScan
+    from .patterns.TarzanScanWidget import TarzanScanWidget
+    from .QScanner import QScanner
 
 try:
     __version__ = version('QPolargraph')

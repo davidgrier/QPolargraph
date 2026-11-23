@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from qtpy import QtCore, QtGui, QtWidgets
 from QInstrument.lib.Configure import Configure
+from QPolargraph.hardware.fake import FakePolargraph
 from QPolargraph.hardware.QPolargraphWidget import QPolargraphWidget
-from QPolargraph.patterns.QScanPattern import ScanState
+from QPolargraph.patterns.QScanPattern import QScanPattern, ScanState
 from QPolargraph.patterns.QScanPatternWidget import QScanPatternWidget
 from QPolargraph.patterns.PolarScan import PolarScan
 from QPolargraph.patterns.RasterScan import RasterScan
@@ -117,13 +118,20 @@ class QScanner(QtWidgets.QMainWindow):
         self.updatePlot()
 
     def setupPolargraph(self, fake: bool) -> None:
-        device = QPolargraphWidget._fakeCls()() if fake else None
+        device = FakePolargraph() if fake else None
         self.polargraph = QPolargraphWidget(device=device)
 
     def setupScanner(self, pattern: type | None) -> None:
         pg = self.polargraph.device
         scan_pattern = (pattern or self.SCAN_PATTERN)(polargraph=pg)
         self.scanner = self.SCAN_WIDGET(pattern=scan_pattern)
+
+    @property
+    def pattern(self) -> QScanPattern:
+        '''The scan pattern of the scanner widget (never None here).'''
+        pattern = self.scanner.pattern
+        assert pattern is not None
+        return pattern
 
     def configure(self, configdir: str | None) -> None:
         configdir = configdir or f'~/.{type(self).__name__}'
@@ -132,8 +140,10 @@ class QScanner(QtWidgets.QMainWindow):
 
     def setupUi(self) -> None:
         self.setWindowTitle(type(self).__name__)
-        geom = QtWidgets.QApplication.primaryScreen().availableGeometry()
-        self.resize(geom.width() * 2 // 3, geom.height() * 2 // 3)
+        screen = QtWidgets.QApplication.primaryScreen()
+        if screen is not None:
+            geom = screen.availableGeometry()
+            self.resize(geom.width() * 2 // 3, geom.height() * 2 // 3)
 
         central = QtWidgets.QWidget()
         self.setCentralWidget(central)
@@ -188,8 +198,9 @@ class QScanner(QtWidgets.QMainWindow):
         # Plot items
         self.plot = pg.PlotItem()
         self.graphicsView.setCentralItem(self.plot)
-        self.plot.invertY(True)
-        self.plot.setAspectLocked(ratio=1.)
+        viewbox = self.plot.getViewBox()
+        viewbox.invertY(True)
+        viewbox.setAspectLocked(True, ratio=1)
         self.plot.showGrid(True, True, 0.2)
         for name in ('left', 'bottom'):
             axis = self.plot.getAxis(name)
@@ -210,32 +221,43 @@ class QScanner(QtWidgets.QMainWindow):
         self.plot.addItem(self.dataPlot)
 
         # Menu bar
-        fileMenu = self.menuBar().addMenu('File')
-        self.actionSaveSettings = fileMenu.addAction('Save Settings')
-        self.actionRestoreSettings = fileMenu.addAction('Restore Settings')
+        menubar = self.menuBar()
+        assert menubar is not None
+        fileMenu = menubar.addMenu('File')
+        assert fileMenu is not None
+        self.actionSaveSettings = self._addAction(fileMenu, 'Save Settings')
+        self.actionRestoreSettings = self._addAction(fileMenu,
+                                                     'Restore Settings')
         fileMenu.addSeparator()
-        self.actionSaveData = fileMenu.addAction('Save Data')
-        self.actionSaveDataAs = fileMenu.addAction('Save Data As ...')
-        self.actionLoadData = fileMenu.addAction('Load Data ...')
+        self.actionSaveData = self._addAction(fileMenu, 'Save Data')
+        self.actionSaveDataAs = self._addAction(fileMenu, 'Save Data As ...')
+        self.actionLoadData = self._addAction(fileMenu, 'Load Data ...')
         fileMenu.addSeparator()
-        self.actionQuit = fileMenu.addAction('Quit')
+        self.actionQuit = self._addAction(fileMenu, 'Quit')
         self.actionQuit.triggered.connect(self.close)
 
         self.statusBar()
 
+    @staticmethod
+    def _addAction(menu: QtWidgets.QMenu, text: str) -> QtGui.QAction:
+        '''Add an action to *menu* (the Qt stubs allow ``None``).'''
+        action = menu.addAction(text)
+        assert action is not None
+        return action
+
     def connectSignals(self) -> None:
         self.polargraph.propertyChanged.connect(self.updatePlot)
         self.scanner.patternChanged.connect(self.updatePlot)
-        self.scanner.pattern.dataReady.connect(self.plotBelt)
-        self.scanner.pattern.dataReady.connect(self._onDataReady)
-        self.scanner.pattern.stateChanged.connect(self._onStateChanged)
-        self.scanner.pattern.closeRequested.connect(self._onCloseRequested)
-        self._toggle.connect(self.scanner.pattern.toggle)
-        self._interruptClose.connect(self.scanner.pattern.interruptAndClose)
+        self.pattern.dataReady.connect(self.plotBelt)
+        self.pattern.dataReady.connect(self._onDataReady)
+        self.pattern.stateChanged.connect(self._onStateChanged)
+        self.pattern.closeRequested.connect(self._onCloseRequested)
+        self._toggle.connect(self.pattern.toggle)
+        self._interruptClose.connect(self.pattern.interruptAndClose)
 
         self.scan.clicked.connect(self.toggleScan)
-        self.center.clicked.connect(self.scanner.pattern.center)
-        self.home.clicked.connect(self.scanner.pattern.home)
+        self.center.clicked.connect(self.pattern.center)
+        self.home.clicked.connect(self.pattern.home)
 
         QtCore.QTimer.singleShot(0, self._syncPatternThread)
 
@@ -249,7 +271,7 @@ class QScanner(QtWidgets.QMainWindow):
 
     @QtCore.Slot()
     def plotTrajectory(self) -> None:
-        x, y = self.scanner.pattern.trajectory()
+        x, y = self.pattern.trajectory()
         self.trajectoryPlot.setData(x, y)
 
     @QtCore.Slot()
@@ -320,12 +342,12 @@ class QScanner(QtWidgets.QMainWindow):
         if device_thread is QtCore.QThread.currentThread():
             QtCore.QTimer.singleShot(50, self._syncPatternThread)
             return
-        if self.scanner.pattern.thread() is not device_thread:
-            self.scanner.pattern.moveToThread(device_thread)
+        if self.pattern.thread() is not device_thread:
+            self.pattern.moveToThread(device_thread)
 
     @QtCore.Slot(object)
     def _onDataReady(self, pos: np.ndarray) -> None:
-        if self.scanner.pattern.scanning():
+        if self.pattern.scanning():
             self.dataReady.emit({'t': float(pos[2]),
                                  'x': float(pos[0]),
                                  'y': float(pos[1])})
@@ -370,14 +392,16 @@ class QScanner(QtWidgets.QMainWindow):
 
     def showStatus(self, message: str) -> None:
         '''Display a message on the status bar.'''
-        self.statusBar().showMessage(message)
+        statusbar = self.statusBar()
+        assert statusbar is not None
+        statusbar.showMessage(message)
 
     def _onCloseRequested(self) -> None:
         self.close()
 
     def closeEvent(self, event: QtGui.QCloseEvent) -> None:
         logger.debug(f'Closing: {event.type()}')
-        if self.scanner.pattern.active():
+        if self.pattern.active():
             self._interruptClose.emit()
             event.ignore()
             return

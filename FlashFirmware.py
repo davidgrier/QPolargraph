@@ -248,13 +248,16 @@ class FlashDialog(QtWidgets.QDialog):
         layout.addWidget(self._output)
 
         buttons = QtWidgets.QDialogButtonBox()
-        self._flash_btn = buttons.addButton(
+        flash_btn = buttons.addButton(
             'Flash Firmware',
             QtWidgets.QDialogButtonBox.ButtonRole.ActionRole
         )
+        assert flash_btn is not None
+        self._flash_btn = flash_btn
         close_btn = buttons.addButton(
             QtWidgets.QDialogButtonBox.StandardButton.Close
         )
+        assert close_btn is not None
         self._flash_btn.clicked.connect(self._flash)
         close_btn.clicked.connect(self.reject)
         layout.addWidget(buttons)
