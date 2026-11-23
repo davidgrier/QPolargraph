@@ -163,7 +163,8 @@ class QScanner(QtWidgets.QMainWindow):
 
         # Right: instrument controls
         controls = QtWidgets.QWidget()
-        controlsLayout = QtWidgets.QVBoxLayout(controls)
+        self.controlsLayout = QtWidgets.QVBoxLayout(controls)
+        controlsLayout = self.controlsLayout
         controlsLayout.setSpacing(1)
         controlsLayout.setContentsMargins(2, 1, 2, 1)
 
