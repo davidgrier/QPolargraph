@@ -4,6 +4,8 @@ Changelog
 Unreleased
 ----------
 
+- The minimum Python version is now 3.11 (3.10 reached end of life in
+  October 2026); CI tests 3.11 to 3.14.
 - Code style is enforced with ``ruff`` (CI ``Lint`` job and a pre-commit hook),
   with the rules used by the other projects of the group.  No change in
   behavior.
